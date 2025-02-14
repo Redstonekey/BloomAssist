@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Identification Result</title>
+</head>
+<body>
+    <h1>Plant Identification Result</h1>
+    <p><strong>Plant Name:</strong> {{ plant_name }}</p>
+    <p><strong>Plant Family:</strong> {{ plant_family }}</p>
+    <p><strong>Confidence Score:</strong> {{ score }}</p>
+    <br>
+    <a href="{{ url_for('index') }}">Upload another image</a>
+</body>
+</html>

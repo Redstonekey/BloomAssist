@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identify Your Plant!</title>
+    <link rel="stylesheet" href="/static/styles.css"> <!-- Link to your CSS file -->
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="menu-icon" onclick="openMenu()">&#9776;</div>
+        <div class="user-icon" onclick="window.location.href='/user'">
+            <i class="fas fa-user"></i>
+        </div>
+    </nav>
+
+    <div class="form-container">
+        <h1>Identify Your Plant!</h1>
+
+        <!-- Video-Stream der Kamera -->
+        <div class="video-container">
+            <video id="video" width="320" height="240" autoplay></video>
+            <button id="capture" class="action-btn">Capture Image</button>
+        </div>
+
+        <!-- The captured image will be displayed here -->
+        <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+        <!-- Form to upload the image -->
+        <form id="uploadForm" action="/identify_plant" method="post" enctype="multipart/form-data" class="upload-form">
+            <input type="file" id="image" name="image" style="display:none;">
+            <button type="submit" class="submit-btn">Upload Image</button>
+        </form>
+    </div>
+
+    <script>
+        // Access the video element
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        const image = document.getElementById('image');
+        const context = canvas.getContext('2d');
+
+        // Allow access to the camera
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+        })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error("Access to the camera denied:", err);
+        });
+
+        // When the "Capture Image" button is clicked
+        captureButton.addEventListener('click', () => {
+            // Draw the current video frame onto the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert the canvas image to a file and add it to the form
+            canvas.toBlob(blob => {
+                const file = new File([blob], 'snapshot.png', { type: 'image/png' });
+
+                // Create a DataTransfer object to insert the image into the file input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+
+                image.files = dataTransfer.files; // Set the file input to the image file
+            });
+        });
+    </script>
+</body>
+</html>
