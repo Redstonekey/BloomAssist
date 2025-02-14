@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 .pythonlibs/
 .upm/
-
+Bloom.db
 # C extensions
 *.so
 
