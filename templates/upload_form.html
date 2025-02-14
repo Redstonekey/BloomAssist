@@ -1,64 +1,175 @@
 {% extends "base.html" %}
 
-{% block title %}Plant Helper App{% endblock %}
+{% block title %}About - Plant Helper App{% endblock %}
 
 {% block content %}
+<style>
+  .form-container {
+      max-width: 600px;
+      padding: 20px;
+      background-color: #e0f0e0;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+  }
 
-    <div class="form-container">
-        <h1>Identify Your Plant!</h1>
+  h1 {
+      margin-bottom: 20px;
+      color: #4CAF50;
+  }
 
-        <!-- Video-Stream der Kamera -->
-        <div class="video-container">
-            <video id="video" width="320" height="240" autoplay></video>
-            <button id="capture" class="action-btn">Capture Image</button>
-        </div>
+  /* Camera and buttons */
+  #video {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 10px;
+  }
 
-        <!-- The captured image will be displayed here -->
-        <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  #openCamera, #swapCamera {
+      width: 100%;
+      padding: 12px;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+  }
 
-        <!-- Form to upload the image -->
-        <form id="uploadForm" action="/identify_plant" method="post" enctype="multipart/form-data" class="upload-form">
-            <input type="file" id="image" name="image" style="display:none;">
-            <button type="submit" class="submit-btn">Upload Image</button>
-        </form>
-    </div>
+  #openCamera:hover, #swapCamera:hover {
+      background-color: #45a049;
+  }
 
-    <script>
-        // Access the video element
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const captureButton = document.getElementById('capture');
-        const image = document.getElementById('image');
-        const context = canvas.getContext('2d');
+  /* Form Styles */
+  .form-actions {
+      margin-top: 20px;
+  }
 
-        // Allow access to the camera
-        navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-        })
-        .then(stream => {
-            video.srcObject = stream;
-        })
-        .catch(err => {
-            console.error("Access to the camera denied:", err);
-        });
+  .submit-btn {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+  }
 
-        // When the "Capture Image" button is clicked
-        captureButton.addEventListener('click', () => {
-            // Draw the current video frame onto the canvas
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  .submit-btn:hover {
+      background-color: #45a049;
+  }
+</style>
+<body>
+<div class="form-container">
+  <h1>Capture and Store Picture</h1>
 
-            // Convert the canvas image to a file and add it to the form
-            canvas.toBlob(blob => {
-                const file = new File([blob], 'snapshot.png', { type: 'image/png' });
+  <video id="video" width="320" height="240" autoplay></video>
+  <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
 
-                // Create a DataTransfer object to insert the image into the file input
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
+  <button id="openCamera">Open Camera</button>
+  <button id="swapCamera" style="display:none;">Swap Camera</button>
 
-                image.files = dataTransfer.files; // Set the file input to the image file
-            });
-        });
-    </script>
-</body>
-</html>
+  <form id="imageForm" action="/identify_plant" method="POST" enctype="multipart/form-data">
+      <input type="file" id="image" name="image" hidden>
+      <div class="form-actions">
+          <button type="submit" class="submit-btn">Submit</button>
+      </div>
+  </form>
+</div>
+
+<script>
+  const openCameraButton = document.getElementById('openCamera');
+  const swapCameraButton = document.getElementById('swapCamera');
+  const videoElement = document.getElementById('video');
+  const canvasElement = document.getElementById('canvas');
+  const fileInput = document.getElementById('image');
+  const form = document.getElementById('imageForm');
+
+  let currentStream = null;
+  let currentDeviceIndex = 0;
+  let videoDevices = [];
+
+  // Get available video devices
+  async function getVideoDevices() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+          alert('MediaDevices API not supported in this browser.');
+          return;
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      videoDevices = devices.filter(device => device.kind === 'videoinput');
+      console.log('Video devices:', videoDevices);
+  }
+
+  // Access the camera
+  async function startCamera(deviceIndex) {
+      if (currentStream) {
+          currentStream.getTracks().forEach(track => track.stop()); // Stop previous stream
+      }
+
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+              video: { deviceId: videoDevices[deviceIndex].deviceId }
+          });
+          videoElement.srcObject = stream;
+          currentStream = stream;
+          console.log('Camera started');
+      } catch (error) {
+          console.error('Error accessing camera:', error);
+      }
+  }
+
+  // Capture image from video feed
+  function captureImage() {
+      return new Promise((resolve) => {
+          const context = canvasElement.getContext('2d');
+          context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+
+          // Get image data from canvas and convert to Blob
+          canvasElement.toBlob((blob) => {
+              // Create a file from the Blob and store it in the file input
+              const file = new File([blob], 'captured-image.png', { type: 'image/png' });
+              const dataTransfer = new DataTransfer(); // Required to simulate a file input
+              dataTransfer.items.add(file);
+              fileInput.files = dataTransfer.files;
+              console.log('Image captured and added to form:', file);
+              resolve();
+          }, 'image/png');
+      });
+  }
+
+  // Swap camera (toggle between front and back)
+  function swapCamera() {
+      currentDeviceIndex = (currentDeviceIndex + 1) % videoDevices.length;
+      startCamera(currentDeviceIndex);
+  }
+
+  // Event listener for "Open Camera" button
+  openCameraButton.addEventListener('click', async () => {
+      await getVideoDevices();
+      if (videoDevices.length > 0) {
+          startCamera(currentDeviceIndex);
+          openCameraButton.style.display = 'none'; // Hide the open camera button
+          swapCameraButton.style.display = 'inline-block'; // Show the swap button
+      } else {
+          alert('No camera devices found!');
+      }
+  });
+
+  // Event listener for "Swap Camera" button
+  swapCameraButton.addEventListener('click', swapCamera);
+
+  // Handle form submission
+  form.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Prevent the form from submitting immediately
+      await captureImage(); // Capture the image
+      if (fileInput.files.length > 0) {
+          console.log('Form submitted with image:', fileInput.files[0]);
+          form.submit(); // Submit the form after the image is captured
+      } else {
+          alert('No image captured.');
+      }
+  });
+</script>
 {% endblock %}

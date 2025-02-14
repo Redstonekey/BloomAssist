@@ -1,10 +1,11 @@
 import os
 import requests
-from flask import Flask, jsonify, render_template, request, url_for, flash, session
+from flask import Flask, jsonify, render_template, request, url_for, flash, session, redirect
 from google import genai
 from google.genai import types
 import PIL.Image
 import uuid
+import sqlite3
 
 
 
@@ -34,6 +35,58 @@ def gemini_image(img_path, message, context):
         contents=["What is this image?", image])
     print(response.text)
     return(response.text)
+
+def intilize_db():
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+
+  cursor.execute('''
+  CREATE TABLE IF NOT EXISTS user (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      password TEXT,
+      email TEXT
+  )
+  ''')
+
+  conn.commit()
+  conn.close()
+
+intilize_db()
+
+def add_user_to_db(password, email):
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+
+  cursor.execute('''
+  INSERT INTO user (password, email)
+  VALUES (?, ?)
+  ''', (password, email))
+
+  conn.commit()
+  conn.close()
+
+@app.route('/signup', methods=['POST', 'GET'])
+def user_page():
+  if request.method == 'POST':
+    password = request.form['password']
+    email = request.form['email']
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM user WHERE email = ?', (email,))
+    existing_user = cursor.fetchone()
+    if existing_user:
+        flash('Email is already in use. Please use a different email.')
+        return render_template('signup.html')
+    else:
+        add_user_to_db(password, email)
+        flash('User registered successfully.')
+        session['logged_in'] = True
+        session['email'] = email
+        return redirect(url_for('index'))
+  elif request.method == 'GET':
+    return render_template('signup.html')
+  else:
+    return 'Method not allowed', 405
 
 
 @app.route('/base')
@@ -104,9 +157,13 @@ def user():
 @app.route('/identify_plant', methods=['POST', 'GET'])
 def identify_plant():
     image_file = request.files.get('image')
+    if image_file:
+        print('Image file received:', image_file.filename)
+    else:
+        print('No image file received')
 
     if not image_file:
-        return jsonify({'error': 'No image provided'}), 400
+        return 'no image providet!', 400
 
     API_KEY = "2b10K63MkVEbJpGgJBqgTrnhT"	# Your API_KEY here
     PROJECT = "all"
@@ -132,7 +189,6 @@ def identify_plant():
   
     # Das erste Element aus den gemeinsamen Namen abrufen
     first_common_name = common_names[0] if common_names else None
-    print(first_common_name)
     # return jsonify(json_result)  
     return render_template('add-plant-details.html', common_name=first_common_name)
 
