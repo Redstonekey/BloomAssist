@@ -66,41 +66,16 @@ def add_user_to_db(password, email):
   conn.commit()
   conn.close()
 
-@app.route('/login', methods=['POST', 'GET'])
-def login():
-   return render_template('login.html')
-
-@app.route('/signup', methods=['POST', 'GET'])
-def user_page():
-  if request.method == 'POST':
-    password = request.form['password']
-    email = request.form['email']
-    conn = sqlite3.connect('Bloom.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM user WHERE email = ?', (email,))
-    existing_user = cursor.fetchone()
-    if existing_user:
-        flash('Email is already in use. Please use a different email.')
-        return render_template('signup.html')
-    else:
-        add_user_to_db(password, email)
-        session['logged_in'] = True
-        session['email'] = email
-        return redirect(url_for('index'))
-  elif request.method == 'GET':
-    return render_template('signup.html')
-  else:
-    return 'Method not allowed', 405
 
 
-@app.route('/base')
-def base():
-    return render_template('base.html')
 
 @app.route('/chat', methods=['POST', 'GET'])
 def ai():
-    if session.get('logged_in') is None:
-      redirect(url_for('login'))
+    if not session.get('logged_in'):
+      return redirect(url_for('login'))
+    if session.get('logged_in') is False:
+      return redirect(url_for('login'))
+    print(session.get('logged_in'))
     if request.method == 'POST':
       message = request.form['user_input']
       session.setdefault('conversation', [])
@@ -140,26 +115,81 @@ def ai():
     else:
       return render_template('ai-chat.html', conversation=session.get('conversation', []))
 
+@app.route('/logout')
+def logout():
+  session['logged_in'] = False
+  return redirect(url_for('login'))
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+  if request.method == 'POST':
+    password = request.form['password']
+    email = request.form['email']
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM user WHERE email = ? AND password = ?', (email, password))
+    user = cursor.fetchone()
+    conn.close()
+    if user:
+      session['logged_in'] = True
+      session['email'] = email
+      return redirect(url_for('index'))
+    else:
+      flash('Invalid email or password. Please try again.')
+      return render_template('login.html')
 
+  return render_template('login.html')
+
+@app.route('/signup', methods=['POST', 'GET'])
+def user_page():
+  if request.method == 'POST':
+    password = request.form['password']
+    email = request.form['email']
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM user WHERE email = ?', (email,))
+    existing_user = cursor.fetchone()
+    if existing_user:
+        flash('Email is already in use. Please use a different email.')
+        return render_template('signup.html')
+    else:
+        add_user_to_db(password, email)
+        session['logged_in'] = True
+        session['email'] = email
+        return redirect(url_for('index'))
+  elif request.method == 'GET':
+    return render_template('signup.html')
+  else:
+    return 'Method not allowed', 405
+
+
+@app.route('/base')
+def base():
+    return render_template('base.html')
 
 
 @app.route('/')
 def index():
-  if session.get('logged_in') is None:
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  if session.get('logged_in') is False:
     return redirect(url_for('login'))
   return render_template('index.html')
 
 @app.route('/add-plant')
 def add_plant():
-  if session.get('logged_in') is None:
-    redirect(url_for('login'))
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  if session.get('logged_in') is False:
+    return redirect(url_for('login'))
   return render_template('upload_form.html')
 
 
 @app.route('/user')
 def user():
-  if session.get('logged_in') is None:
-    redirect(url_for('login'))
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  if session.get('logged_in') is False:
+    return redirect(url_for('login'))
   return 'USER <br><br> THIS PROJECT IS IN BETA AND THE SIDE IS NOT YET DEVELOPED <br> <a href="/">Go Back</a>'
 
 
@@ -168,7 +198,9 @@ def user():
 
 @app.route('/identify_plant', methods=['POST', 'GET'])
 def identify_plant():
-  if session.get('logged_in') is None:
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  if session.get('logged_in') is False:
     return redirect(url_for('login'))
   image_file = request.files.get('image')
   if image_file:
@@ -212,7 +244,9 @@ def identify_plant():
 
 @app.route('/test/information', methods=['GET', 'POST'])
 def test_information():
-  if session.get('logged_in') is None:
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  if session.get('logged_in') is False:
     return redirect(url_for('login'))
   if request.method == 'POST':
     return 'TEST'
