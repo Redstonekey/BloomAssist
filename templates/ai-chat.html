@@ -1,16 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ai</title>
-</head>
-<body>
-    <form action="/chat" method="POST" enctype="multipart/form-data">
-        <input type="text" name="user_input" id="user_input">
-        <input type="file" name="file" accept="image/*">
-        <input type="submit" value="Send">
+{% extends "base.html" %}
+
+{% block title %}AI Chat{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Chat with AI</h1>
+    <p>Ask anything and upload an image for analysis.</p>
+
+    <form action="/chat" method="POST" enctype="multipart/form-data" class="chat-form">
+        <div class="form-group">
+            <label for="user_input">Your Message:</label>
+            <input type="text" name="user_input" id="user_input" placeholder="Type your message..." required>
+        </div>
+        
+        <div class="form-group">
+            <label for="file">Upload an Image:</label>
+            <input type="file" name="file" accept="image/*">
+        </div>
+        
+        <div class="form-actions">
+            <input type="submit" value="Send" class="submit-btn">
+        </div>
     </form>
+
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <ul class="flashes">
@@ -20,5 +32,16 @@
             </ul>
         {% endif %}
     {% endwith %}
-</body>
-</html>
+</div>
+
+<div id="chat-history" class="chat-history">
+    {% for chat in chat_history %}
+        <div class="chat-message">
+            <strong>You:</strong> {{ chat.user_input }}<br>
+            {% if chat.ai_response %}
+            <strong>AI:</strong> {{ chat.ai_response }}
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,20 +1,8 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identify Your Plant!</title>
-    <link rel="stylesheet" href="/static/styles.css"> <!-- Link to your CSS file -->
-</head>
-<body>
+{% extends "base.html" %}
 
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="menu-icon" onclick="openMenu()">&#9776;</div>
-        <div class="user-icon" onclick="window.location.href='/user'">
-            <i class="fas fa-user"></i>
-        </div>
-    </nav>
+{% block title %}Plant Helper App{% endblock %}
+
+{% block content %}
 
     <div class="form-container">
         <h1>Identify Your Plant!</h1>
@@ -73,3 +61,4 @@
     </script>
 </body>
 </html>
+{% endblock %}

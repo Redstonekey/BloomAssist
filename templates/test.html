@@ -1,22 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add New Plant</title>
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
+{% extends "base.html" %}
 
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="menu-icon" onclick="openMenu()">&#9776;</div>
-    <div class="user-icon" onclick="window.location.href='/user'">
-      <i class="fas fa-user"></i>
-    </div>
-  </nav>
+{% block title %}Plant Helper App{% endblock %}
 
-  <!-- Add Plant Form -->
+{% block content %}
   <div class="form-container">
     <h1>Add a New Plant</h1>
     <form id="addPlantForm" action="/submit-plant" method="POST">
@@ -60,3 +46,4 @@
   <script src="/static/script.js"></script>
 </body>
 </html>
+{% endblock %}

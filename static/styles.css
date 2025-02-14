@@ -12,6 +12,12 @@ body {
   transition: margin-left 0.5s; /* Ensure body margin transitions smoothly when the menu opens */
 }
 
+
+.user-icon:hover {
+  color: #ddd;
+  transition: 0.3s;
+}
+
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -24,7 +30,12 @@ body {
 .menu-icon {
   cursor: pointer;
   font-size: 24px;
+  background: none;
+  border: none;
+  color: white;
 }
+
+
 
 .user-icon {
   cursor: pointer;
@@ -40,22 +51,33 @@ body {
   left: 0;
   background-color: #4CAF50;
   overflow-x: hidden;
-  transition: width 0.5s; /* Smooth transition for the menu width */
+  transition: width 0.3s ease-in-out; /* Schnellere, sanftere Animation */
   padding-top: 60px;
 }
 
+
+
 .side-menu a {
-  padding: 10px 15px;
-  text-decoration: none;
-  color: white;
   display: block;
-  opacity: 0; /* Initially hidden */
-  transition: opacity 1.2s ease; /* Fade-in effect */
+  padding: 12px;
+  color: white;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
 }
 
 .side-menu a:hover {
-  background-color: #3e8e41;
+  background-color: #388E3C;
+  color: #fff;
 }
+
+
+.side-menu.open {
+  transform: translateX(0);
+  pointer-events: all;
+}
+
+
 
 .side-menu.open a {
   opacity: 1; /* Show menu items when the menu is open */
@@ -63,10 +85,11 @@ body {
 
 .close-btn {
   position: absolute;
-  top: 10px;
+  top: 15px;
   right: 15px;
   font-size: 36px;
   cursor: pointer;
+  color: white;
 }
 
 /* Main content */
@@ -177,4 +200,20 @@ h1 {
 
 .submit-btn:hover {
   background-color: #45a049;
+}
+
+
+
+@media (max-width: 600px) {
+  .navbar {
+    padding: 10px;
+  }
+
+  .menu-icon, .user-icon {
+    font-size: 20px;
+  }
+
+  .side-menu {
+    width: 70%;
+  }
 }

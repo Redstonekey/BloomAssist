@@ -1,43 +1,8 @@
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
-<!-- !!!!!! Value als argument nutzten!  -->
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plant Helper App - Pflanze Hinzufügen</title>
-  <link rel="stylesheet" href="/static/styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="menu-icon" onclick="openMenu()">&#9776;</div>
-    <div class="user-icon" onclick="window.location.href='/user'">
-      <i class="fas fa-user"></i>
-    </div>
-  </nav>
+{% block title %}Plant Helper App{% endblock %}
 
-  <!-- Sidebar menu -->
-  <div id="sideMenu" class="side-menu">
-    <a href="javascript:void(0)" class="close-btn" onclick="closeMenu()">&times;</a>
-    <a href="/">Home</a>
-    <a href="/my-plants">Meine Pflanzen</a>
-    <a href="/add-plant">Pflanze Hinzufügen</a>
-    <a href="/user">Einstellungen</a>
-    <a href="/about">Über das Projekt</a>
-  </div>
-
-  <!-- Plant Information Form -->
+{% block content %}
   <main>
     <h2>Pflanze hinzufügen</h2>
     <form action="/add-plant" method="POST" class="plant-form">
@@ -165,3 +130,4 @@
   }
 
 </style>
+{% endblock %}

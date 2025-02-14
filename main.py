@@ -36,6 +36,10 @@ def gemini_image(img_path, message, context):
     return(response.text)
 
 
+@app.route('/base')
+def base():
+    return render_template('base.html')
+
 @app.route('/chat', methods=['POST', 'GET'])
 def ai():
     if request.method == 'POST':
@@ -129,8 +133,8 @@ def identify_plant():
     # Das erste Element aus den gemeinsamen Namen abrufen
     first_common_name = common_names[0] if common_names else None
     print(first_common_name)
-    return jsonify(json_result)  
-    # return render_template('add-plant-details.html', common_name=first_common_name)
+    # return jsonify(json_result)  
+    return render_template('add-plant-details.html', common_name=first_common_name)
 
 
 
