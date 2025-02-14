@@ -37,34 +37,7 @@ def gemini_image(img_path, message, context):
     print(response.text)
     return(response.text)
 
-def intilize_db():
-  conn = sqlite3.connect('Bloom.db')
-  cursor = conn.cursor()
 
-  cursor.execute('''
-  CREATE TABLE IF NOT EXISTS user (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      password TEXT,
-      email TEXT
-  )
-  ''')
-
-  conn.commit()
-  conn.close()
-
-intilize_db()
-
-def add_user_to_db(password, email):
-  conn = sqlite3.connect('Bloom.db')
-  cursor = conn.cursor()
-
-  cursor.execute('''
-  INSERT INTO user (password, email)
-  VALUES (?, ?)
-  ''', (password, email))
-
-  conn.commit()
-  conn.close()
 
 
 
@@ -101,7 +74,7 @@ def ai():
             flash((response or 'Mhhh looks like that didnt work well...'))
             
 
-            return render_template('ai-chat.html', conversation=session['conversation'])  
+            return render_template('ai-chat.html', conversation=session['conversation'])
         else:
             return 'No file selected', 400
       else:
@@ -112,8 +85,38 @@ def ai():
         session['conversation'].append({'role': 'ai', 'content': response})
         flash((response or 'Mhhh looks like that didnt work well...'))
         return render_template('ai-chat.html', conversation=session['conversation'])
+
     else:
       return render_template('ai-chat.html', conversation=session.get('conversation', []))
+
+def intilize_db():
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+
+  cursor.execute('''
+  CREATE TABLE IF NOT EXISTS user (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      password TEXT,
+      email TEXT
+  )
+  ''')
+
+  conn.commit()
+  conn.close()
+
+intilize_db()
+
+def add_user_to_db(password, email):
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+
+  cursor.execute('''
+  INSERT INTO user (password, email)
+  VALUES (?, ?)
+  ''', (password, email))
+
+  conn.commit()
+  conn.close()
 
 @app.route('/logout')
 def logout():

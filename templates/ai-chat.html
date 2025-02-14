@@ -3,45 +3,114 @@
 {% block title %}AI Chat{% endblock %}
 
 {% block content %}
-<div class="form-container">
-    <h1>Chat with AI</h1>
-    <p>Ask anything and upload an image for analysis.</p>
+<div class="chat-container-container">
+<div class="chat-container">
+    <h1 class="chat-title">AI Chat</h1>
+    <p class="chat-description">Chatte mit der KI und lade bei Bedarf ein Bild hoch.</p>
+
+    <div id="chat-history" class="chat-history">
+        {% for chat in conversation %}
+            <div class="chat-message {% if chat.role == 'user' %}user-message{% else %}ai-message{% endif %}">
+                <span class="chat-author">{{ chat.role.capitalize() }}:</span> {{ chat.content }}
+            </div>
+        {% endfor %}
+    </div>
 
     <form action="/chat" method="POST" enctype="multipart/form-data" class="chat-form">
-        <div class="form-group">
-            <label for="user_input">Your Message:</label>
-            <input type="text" name="user_input" id="user_input" placeholder="Type your message..." required>
-        </div>
-        
-        <div class="form-group">
-            <label for="file">Upload an Image:</label>
-            <input type="file" name="file" accept="image/*">
-        </div>
-        
-        <div class="form-actions">
-            <input type="submit" value="Send" class="submit-btn">
+        <div class="input-group">
+            <input type="text" name="user_input" id="user_input" class="chat-input" placeholder="Schreibe eine Nachricht..." required>
+            <label for="file" class="file-label">
+                <input type="file" name="file" id="file" class="file-input" accept="image/*">
+                📷
+            </label>
+            <button type="submit" class="send-btn">Senden</button>
         </div>
     </form>
-
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <ul class="flashes">
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+</div>
 </div>
 
-<div id="chat-history" class="chat-history">
-    {% for chat in chat_history %}
-        <div class="chat-message">
-            <strong>You:</strong> {{ chat.user_input }}<br>
-            {% if chat.ai_response %}
-            <strong>AI:</strong> {{ chat.ai_response }}
-            {% endif %}
-        </div>
-    {% endfor %}
-</div>
+<style>
+    .chat-container-container {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
+    .chat-container {
+        width: 100%;
+        max-width: 500px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-title, .chat-description {
+        text-align: center;
+    }
+    .chat-history {
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #f1f1f1;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .chat-message {
+        padding: 10px;
+        border-radius: 8px;
+        max-width: 80%;
+    }
+    .user-message {
+        background: #007bff;
+        color: white;
+        align-self: flex-end;
+    }
+    .ai-message {
+        background: #ddd;
+        align-self: flex-start;
+    }
+    .chat-form {
+        display: flex;
+        gap: 10px;
+    }
+    .input-group {
+        display: flex;
+        flex-grow: 1;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+        padding: 5px;
+        align-items: center;
+    }
+    .chat-input {
+        flex-grow: 1;
+        border: none;
+        outline: none;
+        padding: 10px;
+    }
+    .file-label {
+        padding: 10px;
+        cursor: pointer;
+    }
+    .file-input {
+        display: none;
+    }
+    .send-btn {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+</style>
 {% endblock %}
