@@ -16,6 +16,7 @@ PLANTNET_API_KEY = '2b10K63MkVEbJpGgJBqgTrnhT'
 PLANTNET_ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all?api-key=' + PLANTNET_API_KEY
 GEMINI_API_KEY='AIzaSyDUGz1MODta7hkPBwLFLYembTb0xTtSv74'
 
+
 def gemini(message, context):
   client = genai.Client(api_key=GEMINI_API_KEY)
   response = client.models.generate_content(
@@ -65,6 +66,10 @@ def add_user_to_db(password, email):
   conn.commit()
   conn.close()
 
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+   return render_template('login.html')
+
 @app.route('/signup', methods=['POST', 'GET'])
 def user_page():
   if request.method == 'POST':
@@ -79,7 +84,6 @@ def user_page():
         return render_template('signup.html')
     else:
         add_user_to_db(password, email)
-        flash('User registered successfully.')
         session['logged_in'] = True
         session['email'] = email
         return redirect(url_for('index'))
@@ -95,6 +99,8 @@ def base():
 
 @app.route('/chat', methods=['POST', 'GET'])
 def ai():
+    if session.get('logged_in') is None:
+      redirect(url_for('login'))
     if request.method == 'POST':
       message = request.form['user_input']
       session.setdefault('conversation', [])
@@ -139,15 +145,21 @@ def ai():
 
 @app.route('/')
 def index():
+  if session.get('logged_in') is None:
+    return redirect(url_for('login'))
   return render_template('index.html')
 
 @app.route('/add-plant')
 def add_plant():
+  if session.get('logged_in') is None:
+    redirect(url_for('login'))
   return render_template('upload_form.html')
 
 
 @app.route('/user')
 def user():
+  if session.get('logged_in') is None:
+    redirect(url_for('login'))
   return 'USER <br><br> THIS PROJECT IS IN BETA AND THE SIDE IS NOT YET DEVELOPED <br> <a href="/">Go Back</a>'
 
 
@@ -156,41 +168,43 @@ def user():
 
 @app.route('/identify_plant', methods=['POST', 'GET'])
 def identify_plant():
-    image_file = request.files.get('image')
-    if image_file:
-        print('Image file received:', image_file.filename)
-    else:
-        print('No image file received')
+  if session.get('logged_in') is None:
+    return redirect(url_for('login'))
+  image_file = request.files.get('image')
+  if image_file:
+      print('Image file received:', image_file.filename)
+  else:
+      print('No image file received')
 
-    if not image_file:
-        return 'no image providet!', 400
+  if not image_file:
+      return 'no image providet!', 400
 
-    API_KEY = "2b10K63MkVEbJpGgJBqgTrnhT"	# Your API_KEY here
-    PROJECT = "all"
-    api_endpoint = f"https://my-api.plantnet.org/v2/identify/{PROJECT}?api-key={API_KEY}"
+  API_KEY = "2b10K63MkVEbJpGgJBqgTrnhT"	# Your API_KEY here
+  PROJECT = "all"
+  api_endpoint = f"https://my-api.plantnet.org/v2/identify/{PROJECT}?api-key={API_KEY}"
 
-    # Ensure you pass the correct format with file name, content, and type
-    files = [
-        ('images', (image_file.filename, image_file.stream, image_file.mimetype))
-    ]
+  # Ensure you pass the correct format with file name, content, and type
+  files = [
+      ('images', (image_file.filename, image_file.stream, image_file.mimetype))
+  ]
 
-    data = {'organs': ['auto']}
+  data = {'organs': ['auto']}
 
-    # Send the request
-    response = requests.post(api_endpoint, files=files, data=data)
+  # Send the request
+  response = requests.post(api_endpoint, files=files, data=data)
 
-    if response.status_code != 200:
-      return jsonify({'error': 'Failed to identify plant', 'status_code': response.status_code, 'message': response.text}), response.status_code
-  
+  if response.status_code != 200:
+    return jsonify({'error': 'Failed to identify plant', 'status_code': response.status_code, 'message': response.text}), response.status_code
 
-    json_result = response.json()
 
-    common_names = json_result['results'][0]['species']['commonNames']
-  
-    # Das erste Element aus den gemeinsamen Namen abrufen
-    first_common_name = common_names[0] if common_names else None
-    # return jsonify(json_result)  
-    return render_template('add-plant-details.html', common_name=first_common_name)
+  json_result = response.json()
+
+  common_names = json_result['results'][0]['species']['commonNames']
+
+  # Das erste Element aus den gemeinsamen Namen abrufen
+  first_common_name = common_names[0] if common_names else None
+  # return jsonify(json_result)  
+  return render_template('add-plant-details.html', common_name=first_common_name)
 
 
 
@@ -198,20 +212,13 @@ def identify_plant():
 
 @app.route('/test/information', methods=['GET', 'POST'])
 def test_information():
-    if request.method == 'POST':
-        return 'TEST'
-    return render_template('test_information.html')
+  if session.get('logged_in') is None:
+    return redirect(url_for('login'))
+  if request.method == 'POST':
+    return 'TEST'
+  return render_template('test_information.html')
 
     # Render the form template
-
-
-
-
-
-
-@app.route('/test')
-def testasdfasdf():
-    return render_template('base.html')  # Render HTML-Formular
 
 
 
