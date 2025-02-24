@@ -6,6 +6,9 @@ from google.genai import types
 import PIL.Image
 import uuid
 import sqlite3
+import schedule
+import time
+import threading
 
 
 
@@ -15,15 +18,45 @@ app.secret_key = '23452543b4q3arttaragfd'
 PLANTNET_API_KEY = '2b10K63MkVEbJpGgJBqgTrnhT'
 PLANTNET_ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all?api-key=' + PLANTNET_API_KEY
 GEMINI_API_KEY='AIzaSyDUGz1MODta7hkPBwLFLYembTb0xTtSv74'
-
+instructions = " use &nl to do a new line\n'+'THIS ARE INSTRUCTIONS FROM THE BLOOM ASSIST SYSTHEM DO NOT REFER TO THIS!\nYour an Plant expert!\nNEVER SAY User: or Ai:\n "
 
 def gemini(message, context):
   client = genai.Client(api_key=GEMINI_API_KEY)
   response = client.models.generate_content(
       model="gemini-2.0-flash",
-      contents='use &nl to do a new line\n'+'THIS ARE INSTRUCTIONS FROM THE BLOOM ASSIST SYSTHEM DO NOT REFER TO THIS:\nYour an Plant expert!\nNEVER SAY User: or Bot:\n' + context + '\n' + message,
+      contents= instructions + context + '\n' + message,
   )
   return response.text
+
+def ai_loop():
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT id FROM plants')
+  plants = cursor.fetchall()
+  conn.close()
+
+  for plant in plants:
+    gemini_loop(plant[0])
+
+
+def gemini_loop(plantid):
+  loop_instructions =  'use &nl to do a new line\n'+ ' every 30 min will you be asked. '+ 'THIS ARE INSTRUCTIONS FROM THE BLOOM ASSIST SYSTHEM DO NOT REFER TO THIS!\n you can do following things: add a alert: do at the beginning of the text &alert and at the end &alert-end for the message write a short sentence between the &alert and &alert-end\n memory things: &memory and at the end &memory-end for the message write a short sentence between the &memory and &memory-end\n new calender event: &calender and at the end &calender-end for the name write a short sentence between the &calender and &calender-end and for the date do inside of the calender tags &date &date-end and for the description inside the tags &description &description-end.\n dont Write outside of these options!'
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT * FROM plants WHERE id = ?', (plantid,))
+  plant = cursor.fetchone()
+  conn.close()
+  if plant:
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    response = client.models.generate_content(
+      model="gemini-2.0-flash",
+      contents= loop_instructions + '\n plant details:' + str(plant) + 'bodenfeuchtigkeit: 50%'
+    )
+    print(response.text)
+  else:
+    return 1
+
+gemini_loop(1)
 
 
 def gemini_image(img_path, message, context):
@@ -33,7 +66,7 @@ def gemini_image(img_path, message, context):
     client = genai.Client(api_key="AIzaSyDUGz1MODta7hkPBwLFLYembTb0xTtSv74")
     response = client.models.generate_content(
         model="gemini-2.0-flash",
-        contents=["What is this image?", image])
+        contents=[instructions + context + '\n' + message, image])
     print(response.text)
     return(response.text)
 
@@ -100,6 +133,33 @@ def intilize_db():
       email TEXT
   )
   ''')
+  cursor.execute('''
+  CREATE TABLE IF NOT EXISTS plants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userid INTEGER,
+      name TEXT,
+      plant_type TEXT,
+      plant_location TEXT,
+      plant_date TEXT,
+      notes TEXT
+  )
+  ''')
+  cursor.execute('''
+  CREATE TABLE IF NOT EXISTS chats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userid INTEGER,
+      context TEXT,
+      imageids TEXT
+  )
+  ''')
+  cursor.execute('''
+  CREATE TABLE IF NOT EXISTS chatimages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userid INTEGER,
+      chatid TEXT,
+      uuid TEXT
+  )
+  ''')
 
   conn.commit()
   conn.close()
@@ -117,6 +177,59 @@ def add_user_to_db(password, email):
 
   conn.commit()
   conn.close()
+def add_plant_to_db(userid, name, plant_type, plant_location, plant_date, notes):
+  try:
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+    INSERT INTO plants (userid, name, plant_type, plant_location, plant_date, notes)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ''', (userid, name, plant_type, plant_location, plant_date, notes))
+
+    conn.commit()
+    conn.close()
+    return 2
+  except Exception as e:
+    return 1
+
+
+@app.route('/add-plant-to-db', methods=["POST"])
+def addplanttodb():
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  if session.get('logged_in') is False:
+    return redirect(url_for('login'))
+  
+  # common-name:
+  name = request.form.get('plant_name')
+  # plant-type:
+  plant_type = request.form.get('plant_type')
+  # plant-location:
+  plant_location = request.form.get('plant_location')
+  # plant-date:
+  plant_date = request.form.get('plant_date')
+  # notes:
+  notes = request.form.get('notes')
+  email = session.get('email')
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT id FROM user WHERE email = ?', (email,))
+  user = cursor.fetchone()
+  conn.close()
+  if user:
+    userid = user[0]
+  else:
+    flash('User not found.')
+    return redirect(url_for('login'))
+  if add_plant_to_db(userid, name, plant_type, plant_location, plant_date, notes) == 2:
+    return 'Plant added to db'
+
+  print(name, plant_type, plant_location, plant_date, notes)
+
+
+
+  return ""
 
 @app.route('/logout')
 def logout():
@@ -258,5 +371,20 @@ def test_information():
     # Render the form template
 
 
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
-app.run(host='0.0.0.0', port=8080, debug=True)
+def start_scheduler():
+    schedule.every(2).minutes.do(lambda: ai_loop())
+    
+    # Create and start scheduler thread
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
+
+# Add this before the app.run() call
+start_scheduler()
+
+app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)

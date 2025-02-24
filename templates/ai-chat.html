@@ -3,8 +3,7 @@
 {% block title %}AI Chat{% endblock %}
 
 {% block content %}
-<div class="chat-container-container">
-<div class="chat-container">
+<main>
     <h1 class="chat-title">AI Chat</h1>
     <p class="chat-description">Chatte mit der KI und lade bei Bedarf ein Bild hoch.</p>
 
@@ -19,18 +18,17 @@
     <form action="/chat" method="POST" enctype="multipart/form-data" class="chat-form">
         <div class="input-group">
             <input type="text" name="user_input" id="user_input" class="chat-input" placeholder="Schreibe eine Nachricht..." required>
+            <button type="submit" class="send-btn">Senden</button>
             <label for="file" class="file-label">
                 <input type="file" name="file" id="file" class="file-input" accept="image/*">
                 📷
             </label>
-            <button type="submit" class="send-btn">Senden</button>
         </div>
     </form>
-</div>
-</div>
+</main>
 
 <style>
-    .chat-container-container {
+    main {
         font-family: Arial, sans-serif;
         background-color: #f9f9f9;
         color: #333;
@@ -38,16 +36,7 @@
         flex-direction: column;
         align-items: center;
         padding: 20px;
-    }
-    .chat-container {
         width: 100%;
-        max-width: 500px;
-        padding: 20px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
     }
     .chat-title, .chat-description {
         text-align: center;
@@ -63,6 +52,8 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+        width: 100%;
+        max-width: 500px;
     }
     .chat-message {
         padding: 10px;
@@ -80,7 +71,8 @@
     }
     .chat-form {
         display: flex;
-        gap: 10px;
+        width: 100%;
+        justify-content: center;
     }
     .input-group {
         display: flex;
@@ -90,19 +82,15 @@
         background: #fff;
         padding: 5px;
         align-items: center;
+        width: 100%;
+        max-width: 500px;
     }
     .chat-input {
         flex-grow: 1;
         border: none;
         outline: none;
         padding: 10px;
-    }
-    .file-label {
-        padding: 10px;
-        cursor: pointer;
-    }
-    .file-input {
-        display: none;
+        width: 100%;
     }
     .send-btn {
         background: #007bff;
@@ -111,6 +99,30 @@
         padding: 10px;
         cursor: pointer;
         border-radius: 8px;
+        white-space: nowrap;
+    }
+    .file-label {
+        padding: 10px;
+        cursor: pointer;
+    }
+    .file-input {
+        display: none;
+    }
+    @media (max-width: 500px) {
+        .input-group {
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 5px;
+        }
+        .chat-input {
+            flex-grow: 1;
+        }
+        .send-btn {
+            flex-shrink: 0;
+        }
+        .file-label {
+            flex-shrink: 0;
+        }
     }
 </style>
 {% endblock %}

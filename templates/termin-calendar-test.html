@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Kalender</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Samsung Sans', 'Roboto', sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        .calendar {
+            border-radius: 0;
+            background-color: #fff;
+            box-shadow: none;
+            padding: 10px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 0;
+        }
+        .calendar-header h1 {
+            color: #1a73e8;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .calendar-day {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 60px;
+            border-radius: 50%;
+            background-color: transparent;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+            text-align: center;
+            position: relative;
+        }
+        .calendar-day:hover {
+            background-color: #f0f3f8;
+        }
+        .calendar-day.selected {
+            background-color: #1a73e8;
+            color: white;
+        }
+    
+        /* For small screens */
+        @media (max-width: 600px) {
+            .calendar-grid {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 2px;
+            }
+            .calendar-day {
+                font-size: 1rem;
+                height: 40px;
+            }
+            .calendar-header h1 {
+                font-size: 1.3rem;
+            }
+        }
+    
+        /* Samsung-like Navbar Icons */
+        .navbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-evenly;
+            padding: 10px 0;
+            box-shadow: 0px -2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .navbar div {
+            width: 30px;
+            height: 30px;
+            background-color: #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: #1a73e8;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .navbar div:hover {
+            background-color: #ddd;
+        }
+        .navbar .home-icon::before {
+            content: '🔲'; /* Home symbol */
+        }
+        .navbar .back-icon::before {
+            content: '🏠'; /* Back symbol */
+        }
+        .navbar .recent-icon::before {
+            content: '⬅️'; /* Recent apps symbol */
+        }
+    
+        /* Overlay for dark background */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 100;
+        }
+    
+        /* Modal Card Styling */
+        .modal-card {
+            position: fixed;
+            top: auto;
+            left: 5%;
+            width: 90%;
+            height: 80%;
+            background-color: white;
+            padding: 30px;
+            box-sizing: border-box;
+            z-index: 101;
+            display: none;
+            overflow-y: scroll;
+            border-radius: 25px 25px 0 0;
+        }
+        .modal-card h5 {
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+        .time-schedule {
+            display: flex;
+            flex-direction: column;
+        }
+        .time-schedule div {
+            margin: 15px 0;
+            font-size: 1.2rem;
+        }
+        .close-btn {
+            display: none;
+        }
+        .close-btn:hover {
+            background-color: #d32f2f;
+        }
+        .today {
+            color: #1a73e8;
+            border: 2px solid #1a73e8;
+        }
+
+        .schedule-item {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .time {
+            color: #1a73e8;
+            font-weight: 500;
+            width: 70px;
+        }
+
+        .event {
+            margin-left: 20px;
+            color: #202124;
+        }
+
+        .modal-card h5 {
+            color: #202124;
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-icon {
+            background: none;
+            border: none;
+            color: #5f6368;
+            font-size: 24px;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .close-icon:hover {
+            background-color: #f1f3f4;
+        }
+    </style>
+    
+</head>
+<body>
+
+    <div class="container">
+        <div class="calendar">
+            <div class="calendar-header">
+                <h1>Februar 2025</h1>
+                <button class="btn btn-outline-primary btn-sm">Heute</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-day">So</div>
+                <div class="calendar-day">Mo</div>
+                <div class="calendar-day">Di</div>
+                <div class="calendar-day">Mi</div>
+                <div class="calendar-day">Do</div>
+                <div class="calendar-day">Fr</div>
+                <div class="calendar-day">Sa</div>
+
+                <div class="calendar-day"></div>
+                <div class="calendar-day" onclick="openModal(1)">1</div>
+                <div class="calendar-day" onclick="openModal(2)">2</div>
+                <div class="calendar-day" onclick="openModal(3)">3</div>
+                <div class="calendar-day" onclick="openModal(4)">4</div>
+                <div class="calendar-day" onclick="openModal(5)">5</div>
+                <div class="calendar-day" onclick="openModal(6)">6</div>
+
+                <div class="calendar-day" onclick="openModal(7)">7</div>
+                <div class="calendar-day" onclick="openModal(8)">8</div>
+                <div class="calendar-day" onclick="openModal(9)">9</div>
+                <div class="calendar-day" onclick="openModal(10)">10</div>
+                <div class="calendar-day" onclick="openModal(11)">11</div>
+                <div class="calendar-day" onclick="openModal(12)">12</div>
+                <div class="calendar-day" onclick="openModal(13)">13</div>
+
+                <div class="calendar-day" onclick="openModal(14)">14</div>
+                <div class="calendar-day" onclick="openModal(15)">15</div>
+                <div class="calendar-day" onclick="openModal(16)">16</div>
+                <div class="calendar-day" onclick="openModal(17)">17</div>
+                <div class="calendar-day" onclick="openModal(18)">18</div>
+                <div class="calendar-day" onclick="openModal(19)">19</div>
+                <div class="calendar-day" onclick="openModal(20)">20</div>
+
+                <div class="calendar-day" onclick="openModal(21)">21</div>
+                <div class="calendar-day" onclick="openModal(22)">22</div>
+                <div class="calendar-day" onclick="openModal(23)">23</div>
+                <div class="calendar-day" onclick="openModal(24)">24</div>
+                <div class="calendar-day" onclick="openModal(25)">25</div>
+                <div class="calendar-day" onclick="openModal(26)">26</div>
+                <div class="calendar-day" onclick="openModal(27)">27</div>
+
+                <div class="calendar-day" onclick="openModal(28)">28</div>
+                <div class="calendar-day" onclick="openModal(29)">29</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Samsung-like navbar -->
+    <div class="navbar">
+        <div class="home-icon"></div>
+        <div class="back-icon"></div>
+        <div class="recent-icon"></div>
+    </div>
+
+    <!-- Dunkler Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Modal Card für den ganzen Bildschirm -->
+    <div class="modal-card" id="modal-card">
+        <div class="modal-header">
+            <h5><span id="modal-day"></span>. Februar</h5>
+            <button class="close-icon" onclick="closeModal()">✕</button>
+        </div>
+        <div class="time-schedule" id="time-schedule">
+            <!-- Schedule items will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        function openModal(day) {
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('modal-card').style.display = 'block';
+            document.getElementById('modal-day').innerText = day;
+
+            let schedule = document.getElementById('time-schedule');
+            schedule.innerHTML = `
+                <div class="schedule-item">
+                    <span class="time">08:00</span>
+                    <span class="event">Pflanzen gießen</span>
+                </div>
+                <div class="schedule-item">
+                    <span class="time">12:00</span>
+                    <span class="event">Mittagessen</span>
+                </div>
+                <div class="schedule-item">
+                    <span class="time">15:00</span>
+                    <span class="event">Pflanzen düngen</span>
+                </div>
+                <div class="schedule-item">
+                    <span class="time">18:00</span>
+                    <span class="event">Rückmeldung</span>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            // Modal schließen und Hintergrundabdeckung entfernen
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('modal-card').style.display = 'none';
+        }
+
+        function highlightToday() {
+            const today = new Date().getDate();
+            const days = document.querySelectorAll('.calendar-day');
+            days.forEach(day => {
+                if (day.textContent == today) {
+                    day.classList.add('today');
+                }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', highlightToday);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
