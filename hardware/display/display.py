@@ -11,5 +11,5 @@ def set_lcd(water_level):
     lcd.clear()
     lcd.display()
     lcd.setCursor(0,0)
-    lcd.message(f'Wasserstand:\n{water_level}')
+    lcd.message(f'Bodenfeuchtigkeit:\n{water_level}')
     return None
