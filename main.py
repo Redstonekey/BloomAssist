@@ -36,7 +36,7 @@ def save_water_level(water_level):
   try:
     conn = sqlite3.connect('Bloom.db')
     cursor = conn.cursor()
-    cursor.execute('UPDATE plants SET feuchtigkeit = ? WHERE id = 1', (water_level))
+    cursor.execute('UPDATE plants SET feuchtigkeit = ? WHERE id = 1', (water_level,))
     conn.commit()
     conn.close()
   except Exception as e:
@@ -410,6 +410,7 @@ def start_scheduler():
 
 if __name__ == '__main__':
   start_scheduler()
-  app.run(host='0.0.0.0', port=8080, debug=False)
   check_hardware()
+  app.run(host='0.0.0.0', port=8080, debug=False)
+
 
