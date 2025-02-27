@@ -11,7 +11,7 @@ import time
 import threading
 from intilize_db import intilize_db
 from hardware.soil.sensor import get_water_level
-from hardware.display.display import set_lcd
+from hardware.display.display import *
 intilize_db()
 
 
@@ -412,4 +412,5 @@ if __name__ == '__main__':
   start_scheduler()
   app.run(host='0.0.0.0', port=8080, debug=False)
   check_hardware()
+  display_start()
 
