@@ -9,7 +9,10 @@ import sqlite3
 import schedule
 import time
 import threading
-
+from intilize_db import intilize_db
+from hardware.soil.sensor import get_water_level
+from hardware.display.display import set_lcd
+intilize_db()
 
 
 
@@ -122,49 +125,49 @@ def ai():
     else:
       return render_template('ai-chat.html', conversation=session.get('conversation', []))
 
-def intilize_db():
-  conn = sqlite3.connect('Bloom.db')
-  cursor = conn.cursor()
+# def intilize_db():
+#   conn = sqlite3.connect('Bloom.db')
+#   cursor = conn.cursor()
 
-  cursor.execute('''
-  CREATE TABLE IF NOT EXISTS user (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      password TEXT,
-      email TEXT
-  )
-  ''')
-  cursor.execute('''
-  CREATE TABLE IF NOT EXISTS plants (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userid INTEGER,
-      name TEXT,
-      plant_type TEXT,
-      plant_location TEXT,
-      plant_date TEXT,
-      notes TEXT
-  )
-  ''')
-  cursor.execute('''
-  CREATE TABLE IF NOT EXISTS chats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userid INTEGER,
-      context TEXT,
-      imageids TEXT
-  )
-  ''')
-  cursor.execute('''
-  CREATE TABLE IF NOT EXISTS chatimages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userid INTEGER,
-      chatid TEXT,
-      uuid TEXT
-  )
-  ''')
+#   cursor.execute('''
+#   CREATE TABLE IF NOT EXISTS user (
+#       id INTEGER PRIMARY KEY AUTOINCREMENT,
+#       password TEXT,
+#       email TEXT
+#   )
+#   ''')
+#   cursor.execute('''
+#   CREATE TABLE IF NOT EXISTS plants (
+#       id INTEGER PRIMARY KEY AUTOINCREMENT,
+#       userid INTEGER,
+#       name TEXT,
+#       plant_type TEXT,
+#       plant_location TEXT,
+#       plant_date TEXT,
+#       notes TEXT
+#   )
+#   ''')
+#   cursor.execute('''
+#   CREATE TABLE IF NOT EXISTS chats (
+#       id INTEGER PRIMARY KEY AUTOINCREMENT,
+#       userid INTEGER,
+#       context TEXT,
+#       imageids TEXT
+#   )
+#   ''')
+#   cursor.execute('''
+#   CREATE TABLE IF NOT EXISTS chatimages (
+#       id INTEGER PRIMARY KEY AUTOINCREMENT,
+#       userid INTEGER,
+#       chatid TEXT,
+#       uuid TEXT
+#   )
+#   ''')
 
-  conn.commit()
-  conn.close()
+#   conn.commit()
+#   conn.close()
 
-intilize_db()
+
 
 def add_user_to_db(password, email):
   conn = sqlite3.connect('Bloom.db')
@@ -369,7 +372,10 @@ def test_information():
   return render_template('test_information.html')
 
     # Render the form template
-
+def check_hardware():
+  water_level = get_water_level()
+  set_lcd(water_level)
+  return 'Hardware checked'
 
 def run_scheduler():
     while True:
@@ -377,7 +383,8 @@ def run_scheduler():
         time.sleep(1)
 
 def start_scheduler():
-    schedule.every(2).minutes.do(lambda: ai_loop())
+    schedule.every(30).seconds.do(lambda: ai_loop())
+    schedule.every(30).seconds.do(lambda: check_hardware())
     
     # Create and start scheduler thread
     scheduler_thread = threading.Thread(target=run_scheduler)
@@ -385,6 +392,10 @@ def start_scheduler():
     scheduler_thread.start()
 
 # Add this before the app.run() call
-start_scheduler()
 
-app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
+
+
+if __name__ == '__main__':
+  start_scheduler()
+  app.run(host='0.0.0.0', port=8080, debug=False)
+

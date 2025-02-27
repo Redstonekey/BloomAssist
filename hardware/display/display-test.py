@@ -43,6 +43,14 @@ def loop():
         sleep(10)
 
 
+        def run_with_retry():
+            try:
+                loop()
+            except:
+                sleep(1)
+                run_with_retry()
+
+
 if __name__ == '__main__':
     print ('Program is starting ... ')
     try:
