@@ -1,8 +1,6 @@
-from PCF8574 import PCF8574_GPIO
-from Adafruit_LCD1602 import Adafruit_CharLCD
-from time import sleep
-import requests
-from weather_codes import get_weather_description
+from .PCF8574 import *
+from .Adafruit_LCD1602 import Adafruit_CharLCD
+from .weather_codes import get_weather_description
 
 mcp = PCF8574_GPIO(0x27)  # Create GPIO adapter
 lcd = Adafruit_CharLCD(pin_rs=0, pin_e=2, pins_db=[4,5,6,7], GPIO=mcp)
@@ -13,5 +11,5 @@ def set_lcd(water_level):
     lcd.clear()
     lcd.display()
     lcd.setCursor(0,0)
-    lcd.message(f'Wasserstand: {water_level}')
+    lcd.message(f'Wasserstand:\n{water_level}')
     return None
