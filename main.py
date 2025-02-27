@@ -31,6 +31,18 @@ def gemini(message, context):
   )
   return response.text
 
+
+def save_water_level(water_level):
+  try:
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE plants SET feuchtigkeit = ? WHERE id = 1', (water_level))
+    conn.commit()
+    conn.close()
+  except Exception as e:
+    print(e)
+  return
+
 def ai_loop():
   conn = sqlite3.connect('Bloom.db')
   cursor = conn.cursor()
@@ -375,6 +387,7 @@ def test_information():
 def check_hardware():
   water_level = get_water_level()
   set_lcd(water_level)
+  save_water_level(water_level)
   return 'Hardware checked'
 
 def run_scheduler():

@@ -19,7 +19,8 @@ def intilize_db():
       plant_type TEXT,
       plant_location TEXT,
       plant_date TEXT,
-      notes TEXT
+      notes TEXT,
+      feuchtigkeit TEXT,
   )
   ''')
   cursor.execute('''
