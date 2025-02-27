@@ -17,5 +17,5 @@ def display_start():
     lcd.clear()
     lcd.display()
     lcd.setCursor(0,0)
-    lcd.message('Bloom Assist\nSmart Plant Watering')
+    lcd.message('Bloom Assist\nSmart Watering')
     return None
