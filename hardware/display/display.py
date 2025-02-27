@@ -12,12 +12,3 @@ def set_lcd(water_level):
     lcd.setCursor(0,0)
     lcd.message(f'Bodenfeuchtigkeit:\n{water_level}')
     return None
-
-def display_start():
-    mcp.output(3,1)     # Turn on backlight
-    lcd.begin(16,2)     # Initialize 16x2 LCD
-    lcd.clear()
-    lcd.display()
-    lcd.setCursor(0,0)
-    lcd.message('Bloom Assist\nSmart Watering')
-    return None
