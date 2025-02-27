@@ -20,7 +20,7 @@ def intilize_db():
       plant_location TEXT,
       plant_date TEXT,
       notes TEXT,
-      feuchtigkeit TEXT,
+      feuchtigkeit TEXT
   )
   ''')
   cursor.execute('''
