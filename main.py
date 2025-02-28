@@ -248,6 +248,48 @@ def addplanttodb():
 
 
 
+
+
+
+
+@app.route('/plants')
+def myplants():
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  
+  # Get user ID from email in session
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+  
+  # First get user ID
+  cursor.execute('SELECT id FROM user WHERE email = ?', (session['email'],))
+  user = cursor.fetchone()
+  
+  if not user:
+    conn.close()
+    return redirect(url_for('login'))
+  
+  # Get all plants for this user
+  cursor.execute('''
+    SELECT id, name, plant_type, feuchtigkeit 
+    FROM plants 
+    WHERE userid = ?
+  ''', (user[0],))
+  
+  plants = []
+  for plant in cursor.fetchall():
+    plants.append({
+      'id': plant[0],
+      'name': plant[1],
+      'image_url': '/static/images/default_plant.jpg',  # You can customize this
+      'moisture_status': f"{plant[3]}%" if plant[3] is not None else "Keine Messdaten!"
+    })
+  
+  conn.close()
+  return render_template('index.html', plants=plants)
+
+
+
 @app.route('/')
 def index():
   if not session.get('logged_in'):
