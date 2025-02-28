@@ -10,8 +10,8 @@ import schedule
 import time
 import threading
 from intilize_db import intilize_db
-from hardware.soil.sensor import get_water_level
-from hardware.display.display import *
+# from hardware.soil.sensor import get_water_level
+# from hardware.display.display import *
 intilize_db()
 
 
@@ -246,6 +246,76 @@ def addplanttodb():
 
   return ""
 
+
+
+@app.route('/')
+def index():
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+  
+  # Get user ID from email in session
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+  
+  # First get user ID
+  cursor.execute('SELECT id FROM user WHERE email = ?', (session['email'],))
+  user = cursor.fetchone()
+  
+  if not user:
+    conn.close()
+    return redirect(url_for('login'))
+  
+  # Get all plants for this user
+  cursor.execute('''
+    SELECT id, name, plant_type, feuchtigkeit 
+    FROM plants 
+    WHERE userid = ?
+  ''', (user[0],))
+  
+  plants = []
+  for plant in cursor.fetchall():
+    plants.append({
+      'id': plant[0],
+      'name': plant[1],
+      'image_url': '/static/images/default_plant.jpg',  # You can customize this
+      'moisture_status': f"{plant[3]}%" if plant[3] is not None else "Keine Messdaten!"
+    })
+  
+  conn.close()
+  return render_template('index.html', plants=plants)
+
+
+@app.route('/plant/<int:plant_id>')
+def plant_detail(plant_id):
+    # In a real app, you would fetch this from your database
+    # This is example data
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM plants WHERE id = ?', (plant_id,))
+    plant_data = cursor.fetchone()
+    conn.close()
+
+    if not plant_data:
+      return "Plant not found", 404
+
+    plant = {
+      'id': plant_id,
+      'name': plant_data[2],  # Assuming name is the 3rd column
+      'image_url': '/static/images/default_plant.jpg',
+      'moisture': plant_data[7] if plant_data[7] else 0,  # Assuming feuchtigkeit is the 8th column
+      'moisture_status': f"{plant_data[7]}%" if plant_data[7] else "Keine Messdaten!",
+      'light': 82,
+      'light_status': 'Optimale Lichtverhältnisse',
+      'temperature': 23,
+      'temperature_percentage': 70,
+      'temperature_status': 'Ideale Temperatur',
+      'watering_tip': 'Einmal pro Woche gründlich gießen. Staunässe vermeiden.',
+      'light_tip': 'Benötigt viel Sonnenlicht. Mindestens 6 Stunden direktes Sonnenlicht pro Tag.',
+      'fertilizer_tip': 'Alle 2 Wochen mit organischem Dünger im Frühling und Sommer.'
+    }
+    
+    return render_template('plant_details.html', plant=plant)
+
 @app.route('/logout')
 def logout():
   session['logged_in'] = False
@@ -296,15 +366,6 @@ def user_page():
 @app.route('/base')
 def base():
     return render_template('base.html')
-
-
-@app.route('/')
-def index():
-  if not session.get('logged_in'):
-    return redirect(url_for('login'))
-  if session.get('logged_in') is False:
-    return redirect(url_for('login'))
-  return render_template('index.html')
 
 @app.route('/add-plant')
 def add_plant():
@@ -409,8 +470,8 @@ def start_scheduler():
 
 
 if __name__ == '__main__':
-  start_scheduler()
-  check_hardware()
+  # start_scheduler()
+  # check_hardware()
   app.run(host='0.0.0.0', port=8080, debug=False)
 
 
