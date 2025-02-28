@@ -27,6 +27,7 @@ def set_lcd(water_level):
     lcd.display()
     
     while (datetime.now() - start_time).total_seconds() < 30:
+        lcd.clear()
         lcd.setCursor(0,0)
         lcd.message(get_time_now())   # display the time
         sleep(1)
