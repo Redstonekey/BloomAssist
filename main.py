@@ -252,7 +252,7 @@ def addplanttodb():
 
 
 
-@app.route('/plants')
+@app.route('/my-plants')
 def myplants():
   if not session.get('logged_in'):
     return redirect(url_for('login'))
