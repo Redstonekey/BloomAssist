@@ -14,6 +14,7 @@ def get_time_now():     # get system time
 
 
 def set_lcd(water_level, water_level_n):
+    print(f'{water_level}   {water_level_n}')
     start_time = datetime.now()
     mcp.output(3,1)     # Turn on backlight
     lcd.begin(16,2)     # Initialize 16x2 LCD
