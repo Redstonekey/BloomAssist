@@ -20,7 +20,7 @@ def intilize_db():
       plant_location TEXT,
       plant_date TEXT,
       notes TEXT,
-      feuchtigkeit TEXT,
+    feuchtigkeit TEXT
       ai_bewässerung TEXT,
       ai_licht TEXT,
       ai_dünger TEXT,
@@ -41,6 +41,15 @@ def intilize_db():
       userid INTEGER,
       chatid TEXT,
       uuid TEXT
+  )
+  ''')
+  cursor.execute('''
+  CREATE TABLE IF NOT EXISTS statistic (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userid INTEGER,
+    plantid TEXT,
+    date TEXT,
+    feuchtigkeit TEXT
   )
   ''')
 

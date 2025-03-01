@@ -69,10 +69,7 @@
     <div class="plant-info-section">
       <h2>Historische Daten</h2>
       <div class="history-chart">
-        <!-- Placeholder for chart -->
-        <div class="chart-placeholder">
-          <p>Hier würde ein Diagramm der historischen Daten angezeigt werden.</p>
-        </div>
+        <canvas id="moistureChart"></canvas>
       </div>
     </div>
     
@@ -88,6 +85,53 @@
       </button>
     </div>
   </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('moistureChart').getContext('2d');
+    const moistureChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: JSON.parse('{{ dates|safe }}'),
+        datasets: [{
+          label: 'Feuchtigkeit (%)',
+          data: JSON.parse('{{ moisture_data|safe }}'),
+          borderColor: '#4CAF50',
+          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Feuchtigkeitsverlauf'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            title: {
+              display: true,
+              text: 'Feuchtigkeit (%)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Datum'
+            }
+          }
+        }
+      }
+    });
+  </script>
 {% endblock %}
 
 {% block styles %}

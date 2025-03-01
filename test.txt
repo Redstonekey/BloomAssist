@@ -1,0 +1,30 @@
+  @app.route('/plant/<int:plant_id>')
+    def plant_details(plant_id):
+      conn = sqlite3.connect('Bloom.db')
+      cursor = conn.cursor()
+      
+      # Fetch plant details
+      plant = cursor.execute('''
+        SELECT * FROM plants WHERE id = ?
+      ''', (plant_id,)).fetchone()
+      
+      # Fetch last 7 days of statistics
+      stats = cursor.execute('''
+        SELECT date, feuchtigkeit 
+        FROM statistic 
+        WHERE plantid = ? 
+        ORDER BY date DESC 
+        LIMIT 7
+      ''', (plant_id,)).fetchall()
+      
+      conn.close()
+      
+      # Prepare data for the chart
+      dates = [stat[0] for stat in stats][::-1]  # Reverse to show chronological order
+      moisture_data = [float(stat[1]) for stat in stats][::-1]
+      
+      return render_template('plant_details.html',
+        plant=plant,
+        dates=json.dumps(dates),
+        moisture_data=json.dumps(moisture_data)
+      )

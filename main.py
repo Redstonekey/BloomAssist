@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, jsonify, render_template, request, url_for, flash, session, redirect
+from flask import Flask, json, jsonify, render_template, request, url_for, flash, session, redirect
 from google import genai
 from google.genai import types
 import PIL.Image
@@ -193,15 +193,19 @@ def add_user_to_db(password, email):
   conn.commit()
   conn.close()
 def add_plant_to_db(userid, name, plant_type, plant_location, plant_date, notes):
+  context = f"Plant Info - ID: {userid}, Name: {name}, Type: {plant_type}, Location: {plant_location}, Date: {plant_date}, Notes: {notes}. Answer always in German!"
+  tip_bewässerung = gemini('give a tip about the following plant for the following categorie only 1 sentenc Bewässerung dont use &nl', context)
+  tip_Lichtbedarf = gemini('give a tip about the following plant for the following categorie only 1 sentenc Lichtbedarf dont use &nl', context)
+  tip_dünger = gemini('give a tip about the following plant for the following categorie only 1 sentenc Dünger dont use &nl', context)
+  print(tip_bewässerung, tip_Lichtbedarf, tip_dünger)
   try:
     conn = sqlite3.connect('Bloom.db')
     cursor = conn.cursor()
 
     cursor.execute('''
-    INSERT INTO plants (userid, name, plant_type, plant_location, plant_date, notes)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ''', (userid, name, plant_type, plant_location, plant_date, notes))
-
+    INSERT INTO plants (userid, name, plant_type, plant_location, plant_date, notes, ai_bewässerung, ai_licht, ai_dünger)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (userid, name, plant_type, plant_location, plant_date, notes, tip_bewässerung, tip_Lichtbedarf, tip_dünger))
     conn.commit()
     conn.close()
     return 2
@@ -238,7 +242,7 @@ def addplanttodb():
     flash('User not found.')
     return redirect(url_for('login'))
   if add_plant_to_db(userid, name, plant_type, plant_location, plant_date, notes) == 2:
-    return 'Plant added to db'
+    return redirect(url_for('index'))
 
   print(name, plant_type, plant_location, plant_date, notes)
 
@@ -334,7 +338,26 @@ def plant_detail(plant_id):
     conn = sqlite3.connect('Bloom.db')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM plants WHERE id = ?', (plant_id,))
+    
     plant_data = cursor.fetchone()
+    conn.close()
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    
+    # Fetch plant details
+    plant = cursor.execute('''
+      SELECT * FROM plants WHERE id = ?
+    ''', (plant_id,)).fetchone()
+    
+    # Fetch last 7 days of statistics
+    stats = cursor.execute('''
+      SELECT date, feuchtigkeit 
+      FROM statistic 
+      WHERE plantid = ? 
+      ORDER BY date DESC 
+      LIMIT 7
+    ''', (plant_id,)).fetchall()
+    
     conn.close()
 
     if not plant_data:
@@ -351,12 +374,19 @@ def plant_detail(plant_id):
       'temperature': 23,
       'temperature_percentage': 70,
       'temperature_status': 'Ideale Temperatur',
-      'watering_tip': 'Einmal pro Woche gründlich gießen. Staunässe vermeiden.',
-      'light_tip': 'Benötigt viel Sonnenlicht. Mindestens 6 Stunden direktes Sonnenlicht pro Tag.',
-      'fertilizer_tip': 'Alle 2 Wochen mit organischem Dünger im Frühling und Sommer.'
+      'watering_tip': plant_data[8],
+      'light_tip': plant_data[9],
+      'fertilizer_tip': plant_data[10]
     }
+        # Prepare data for the chart
+    dates = [stat[0] for stat in stats][::-1]  # Reverse to show chronological order
+    moisture_data = [float(stat[1]) for stat in stats][::-1]
     
-    return render_template('plant_details.html', plant=plant)
+    return render_template('plant_details.html',
+      plant=plant,
+      dates=json.dumps(dates),
+      moisture_data=json.dumps(moisture_data)
+     )
 
 @app.route('/logout')
 def logout():
@@ -482,12 +512,28 @@ def test_information():
     return 'TEST'
   return render_template('test_information.html')
 
+def save_water_level_statistic(water_level_n_save):
+  try:
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+    INSERT INTO statistic (userid, plantid, date, feuchtigkeit)
+    VALUES (1, 1, datetime('now'), ?)
+    ''', (water_level_n_save,))
+    conn.commit()
+    conn.close()
+  except Exception as e:
+    print(e)
+  return 
+
+
     # Render the form template
 def check_hardware():
-  water_level_status, water_level_n = get_water_level()
-  set_lcd(water_level_status, water_level_n)
+  water_level_status, water_level_n = get_water_level() # type: ignore
+  set_lcd(water_level_status, water_level_n) # type: ignore
   water_level_n_save = water_level_n * 10
   save_water_level(water_level_n_save)
+  save_water_level_statistic(water_level_n_save)
   return 'Hardware checked'
 
 def run_scheduler():
@@ -505,8 +551,8 @@ def start_scheduler():
     scheduler_thread.start()
 
 if __name__ == '__main__':
-  start_scheduler()
-  check_hardware()
+  # start_scheduler()
+  # check_hardware()
   app.run(host='0.0.0.0', port=8080, debug=False)
 
 
