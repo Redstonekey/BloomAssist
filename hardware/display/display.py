@@ -21,4 +21,6 @@ def set_lcd(water_level, water_level_n):
     lcd.clear()
     lcd.display()
     lcd.setCursor(0,0)
-    lcd.message(f'Erdfeuchtigkeit:\n{water_level}   {water_level_n}')
+    lcd.message(f'Erdfeuchtigkeit:\n{water_level}')
+    lcd.setCursor(12,1)  # Position cursor at column 12, row 1 (second line)
+    lcd.message(f'{water_level_n}/10')
