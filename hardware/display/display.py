@@ -25,5 +25,5 @@ def set_lcd(water_level, water_level_n):
     if water_level_n >= 10:
         print('10!!!!')
         lcd.setCursor(11,1)
-    lcd.setCursor(11,1)  # Position cursor at column 12, row 1 (second line)
+    lcd.setCursor(12,1)  # Position cursor at column 12, row 1 (second line)
     lcd.message(f'{water_level_n}/10')
