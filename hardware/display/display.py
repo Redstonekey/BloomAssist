@@ -21,11 +21,3 @@ def set_lcd(water_level):
     lcd.display()
     lcd.setCursor(0,0)
     lcd.message(f'Erdfeuchtigkeit:\n{water_level}')
-    sleep(15)
-    lcd.clear()
-    lcd.display()
-    
-    while (datetime.now() - start_time).total_seconds() < 28:
-        lcd.setCursor(0,0)
-        lcd.message(get_time_now())   # display the time
-        sleep(1)
