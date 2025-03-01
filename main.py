@@ -10,8 +10,8 @@ import schedule
 import time
 import threading
 from intilize_db import intilize_db
-from hardware.soil.sensor import get_water_level
-from hardware.display.display import *
+# from hardware.soil.sensor import get_water_level
+# from hardware.display.display import *
 intilize_db()
 
 
