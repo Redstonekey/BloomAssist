@@ -6,8 +6,6 @@ __pycache__/
 .upm/
 # C extensions
 *.so
-Bloom.db
-
 # Distribution / packaging
 .Python
 build/
