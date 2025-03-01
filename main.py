@@ -490,7 +490,8 @@ def test_information():
 def check_hardware():
   water_level_status, water_level_n = get_water_level()
   set_lcd(water_level_status, water_level_n)
-  save_water_level(water_level_n)
+  water_level_n_save = water_level_n * 10
+  save_water_level(water_level_n_save)
   return 'Hardware checked'
 
 def run_scheduler():
