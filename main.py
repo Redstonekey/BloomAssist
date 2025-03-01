@@ -10,8 +10,8 @@ import schedule
 import time
 import threading
 from intilize_db import intilize_db
-# from hardware.soil.sensor import get_water_level
-# from hardware.display.display import *
+from hardware.soil.sensor import get_water_level
+from hardware.display.display import *
 intilize_db()
 
 
@@ -551,8 +551,8 @@ def start_scheduler():
     scheduler_thread.start()
 
 if __name__ == '__main__':
-  # start_scheduler()
-  # check_hardware()
+  start_scheduler()
+  check_hardware()
   app.run(host='0.0.0.0', port=8080, debug=False)
 
 
