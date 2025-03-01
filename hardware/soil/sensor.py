@@ -10,18 +10,26 @@ spi.max_speed_hz = 1350000
 
 
 def soil_moisture_level(sensor_value):
+    # Calculate scale from 1-10 based on sensor range
+    scale = round(10 - ((sensor_value - WATER_VALUE) / (AIR_VALUE - WATER_VALUE) * 9))
+    # Ensure scale stays within 1-10 range
+    scale = max(1, min(10, scale))
+    
+    # Original text-based status
     if sensor_value >= 1023:
-        return "Sehr Trocken"
+        return "Sehr Trocken", scale
     elif 900 <= sensor_value < 1023:
-        return "Trocken"
+        return "Trocken", scale
     elif 750 <= sensor_value < 900:
-        return "Feucht"
+        return "Feucht", scale
     elif 634 <= sensor_value < 750:
-        return "Sehr feucht"
+        return "Sehr feucht", scale
     elif sensor_value <= 633:
-        return "Nass"
+        return "Nass", scale
     else:
-        return "ERROR 301"
+        return "ERROR 301", 0
+
+
 
 def read_adc(channel):
     """Read SPI data from MCP3008, 8 channels [0-7]."""

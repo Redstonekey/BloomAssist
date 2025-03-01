@@ -13,11 +13,11 @@ def get_time_now():     # get system time
 
 
 
-def set_lcd(water_level):
+def set_lcd(water_level, water_level_n):
     start_time = datetime.now()
     mcp.output(3,1)     # Turn on backlight
     lcd.begin(16,2)     # Initialize 16x2 LCD
     lcd.clear()
     lcd.display()
     lcd.setCursor(0,0)
-    lcd.message(f'Erdfeuchtigkeit:\n{water_level}')
+    lcd.message(f'Erdfeuchtigkeit:\n{water_level}   {water_level_n}')

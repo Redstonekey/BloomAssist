@@ -488,9 +488,9 @@ def test_information():
 
     # Render the form template
 def check_hardware():
-  water_level = get_water_level()
-  set_lcd(water_level)
-  save_water_level(water_level)
+  water_level_status, water_level_n = get_water_level()
+  set_lcd(water_level_status, water_level_n)
+  save_water_level(water_level_n)
   return 'Hardware checked'
 
 def run_scheduler():
@@ -506,10 +506,6 @@ def start_scheduler():
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
     scheduler_thread.start()
-
-# Add this before the app.run() call
-
-
 
 if __name__ == '__main__':
   start_scheduler()
