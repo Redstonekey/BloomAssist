@@ -472,10 +472,6 @@ def identify_plant():
   # return jsonify(json_result)  
   return render_template('add-plant-details.html', common_name=first_common_name)
 
-
-
-
-
 @app.route('/test/information', methods=['GET', 'POST'])
 def test_information():
   if not session.get('logged_in'):
