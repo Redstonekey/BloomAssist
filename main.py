@@ -512,6 +512,41 @@ def test_information():
     return 'TEST'
   return render_template('test_information.html')
 
+@app.route('/delete/<int:plant_id>', methods=['GET'])
+def delete_plant(plant_id):
+  if not session.get('logged_in'):
+    return redirect(url_for('login'))
+    
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+  
+  # Verify the plant belongs to the logged in user
+  cursor.execute('''
+    SELECT userid FROM plants 
+    WHERE id = ?
+  ''', (plant_id,))
+  plant = cursor.fetchone()
+  
+  if not plant:
+    conn.close()
+    flash('Plant not found')
+    return redirect(url_for('index'))
+    
+  # Get user ID for logged in user
+  cursor.execute('SELECT id FROM user WHERE email = ?', (session['email'],))
+  user = cursor.fetchone()
+  
+  if not user or plant[0] != user[0]:
+    conn.close() 
+    flash('Not authorized to delete this plant')
+    return redirect(url_for('index'))
+  
+  # Delete plant
+  cursor.execute('DELETE FROM plants WHERE id = ?', (plant_id,))
+  conn.commit()
+  conn.close()
+  return redirect(url_for('index'))
+
 def save_water_level_statistic(water_level_n_save):
   try:
     conn = sqlite3.connect('Bloom.db')
@@ -538,8 +573,8 @@ def check_hardware():
 
 def run_scheduler():
     while True:
-        schedule.run_pending()
-        time.sleep(1)
+      schedule.run_pending()
+      time.sleep(1)
 
 def start_scheduler():
     schedule.every(2).minutes.do(lambda: ai_loop())
