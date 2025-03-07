@@ -56,3 +56,6 @@ def intilize_db():
   conn.commit()
   conn.close()
   return True
+
+if __name__ == '__main__':
+  intilize_db()

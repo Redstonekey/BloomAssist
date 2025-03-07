@@ -10,7 +10,7 @@ import schedule
 import time
 import threading
 from intilize_db import intilize_db
-from hardware.soil.sensor import get_water_level
+from hardware.soil.sensor import *
 from hardware.display.display import *
 intilize_db()
 
@@ -564,12 +564,19 @@ def save_water_level_statistic(water_level_n_save):
 
     # Render the form template
 def check_hardware():
+  if debug == True:
+    water_level_status, water_level_n = get_test_level()
+    set_test_lcd(water_level_status, water_level_n)
+    water_level_n_save = water_level_n * 10
+    save_water_level(water_level_n_save)
+    save_water_level_statistic(water_level_n_save)
+    return
   water_level_status, water_level_n = get_water_level() # type: ignore
   set_lcd(water_level_status, water_level_n) # type: ignore
   water_level_n_save = water_level_n * 10
   save_water_level(water_level_n_save)
   save_water_level_statistic(water_level_n_save)
-  return 'Hardware checked'
+  return
 
 def run_scheduler():
     while True:
@@ -586,8 +593,7 @@ def start_scheduler():
     scheduler_thread.start()
 
 if __name__ == '__main__':
+  debug = True
   start_scheduler()
   check_hardware()
   app.run(host='0.0.0.0', port=8080, debug=False)
-
-

@@ -1,12 +1,17 @@
-import spidev  # type: ignore
-
+try:
+    import spidev  # type: ignore
+except Exception as e:
+    print(e)
 AIR_VALUE = 1023   # Value when sensor is in air
 WATER_VALUE = 633 # Value when sensor is in water
 
 # SPI setup
-spi = spidev.SpiDev()
-spi.open(0, 0)  # Open SPI bus 0, device (CS) 0
-spi.max_speed_hz = 1350000
+try:
+    spi = spidev.SpiDev() # type: ignore
+    spi.open(0, 0)  # Open SPI bus 0, device (CS) 0
+    spi.max_speed_hz = 1350000
+except Exception as e:
+    print(e)
 
 
 def soil_moisture_level(sensor_value):
@@ -58,4 +63,7 @@ def read_adc(channel):
 def get_water_level():
     adc_value = read_adc(0)
     moisture_status = soil_moisture_level(adc_value)
+    return moisture_status
+def get_test_level():
+    moisture_status = soil_moisture_level(700)
     return moisture_status
