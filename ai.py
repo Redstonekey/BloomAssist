@@ -6,7 +6,7 @@ import PIL.Image
 def gemini_image(img_path, message, context):
     image = PIL.Image.open('image.jpg')
     if img_path == 'none':
-        gemini(message, context)
+        gemini(message, context)  #type: ignore
         return "No image provided"
 
     client = genai.Client(api_key="AIzaSyDUGz1MODta7hkPBwLFLYembTb0xTtSv74")

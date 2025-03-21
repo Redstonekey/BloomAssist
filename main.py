@@ -12,9 +12,15 @@ import threading
 from intilize_db import intilize_db
 from hardware.soil.sensor import *
 from hardware.display.display import *
+import jwt
+from datetime import datetime, timedelta
+from functools import wraps
+
 intilize_db()
 
-
+JWT_SECRET = 'idkjustsomekeyyouwant'
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_DELTA = timedelta(days=200)
 
 app = Flask('app')
 app.secret_key = '23452543b4q3arttaragfd'
@@ -22,6 +28,27 @@ PLANTNET_API_KEY = '2b10K63MkVEbJpGgJBqgTrnhT'
 PLANTNET_ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all?api-key=' + PLANTNET_API_KEY
 GEMINI_API_KEY='AIzaSyDUGz1MODta7hkPBwLFLYembTb0xTtSv74'
 instructions = " use &nl to do a new line\n'+'THIS ARE INSTRUCTIONS FROM THE BLOOM ASSIST SYSTHEM DO NOT REFER TO THIS!\nYour an Plant expert!\nNEVER SAY User: or Ai:\n "
+
+
+# Add this decorator function to verify tokens
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].replace('Bearer ', '')
+        
+        if not token:
+            return jsonify({'message': 'Token is missing'}), 401
+            
+        try:
+            data = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            current_user = data['email']
+        except:
+            return jsonify({'message': 'Token is invalid'}), 402
+
+        return f(*args, **kwargs)
+    return decorated
 
 def gemini(message, context):
   client = genai.Client(api_key=GEMINI_API_KEY)
@@ -546,6 +573,138 @@ def delete_plant(plant_id):
   conn.commit()
   conn.close()
   return redirect(url_for('index'))
+
+# ------------------------------------------
+#             !API ROUTES!
+# ------------------------------------------
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    if request.method == 'POST':
+        data = request.get_json()
+        password = data.get('password')
+        email = data.get('email')
+        
+        conn = sqlite3.connect('Bloom.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM user WHERE email = ? AND password = ?', (email, password))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user:
+            # Generate token
+            token = jwt.encode({
+                'email': email,
+                'exp': datetime.utcnow() + JWT_EXPIRATION_DELTA
+            }, JWT_SECRET, algorithm=JWT_ALGORITHM)
+            
+            return jsonify({
+                'success': True,
+                'email': email,
+                'token': token,
+                'message': 'Login successful',
+                'code': 1
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid credentials',
+                'code': 2
+            }), 401
+    return redirect(url_for('index'))
+
+@app.route('/api/signup', methods=['POST'])
+def api_signup():
+    if request.method == 'POST':
+        data = request.get_json()
+        password = data.get('password')
+        email = data.get('email')
+
+        conn = sqlite3.connect('Bloom.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM user WHERE email = ?', (email,))
+        existing_user = cursor.fetchone()
+        
+        if existing_user:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Email already exists',
+                'code': 2
+            }), 409
+        else:
+            add_user_to_db(password, email)
+            conn.close()
+            
+            # Generate token for the new user
+            token = jwt.encode({
+                'email': email,
+                'exp': datetime.utcnow() + JWT_EXPIRATION_DELTA
+            }, JWT_SECRET, algorithm=JWT_ALGORITHM)
+            
+            return jsonify({
+                'success': True,
+                'email': email,
+                'token': token,
+                'message': 'Signup successful',
+                'code': 1
+            }), 201
+    return redirect(url_for('index'))
+
+
+
+@app.route('/api/delete/<plantid>')
+@token_required
+def api_delete(plantid):  
+    
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+  
+  # Verify the plant belongs to the logged in user
+  cursor.execute('''
+    SELECT userid FROM plants 
+    WHERE id = ?
+  ''', (plantid,))
+  plant = cursor.fetchone()
+  
+  if not plant:
+    conn.close()
+    flash('Plant not found')
+    return jsonify({
+    'success': False,
+    'plantid': plantid,
+    'message': 'Plant doesnt excist',
+    'code': 3 
+    })
+    
+  # Get user ID for logged in user
+  cursor.execute('SELECT id FROM user WHERE email = ?', (session['email'],))
+  user = cursor.fetchone()
+  
+  if not user or plant[0] != user[0]:
+    conn.close() 
+    return jsonify({
+    'success': False,
+    'plantid': plantid,
+    'message': 'You dont have Permission for that!',
+    'code': 2 
+    })
+  
+  # Delete plant
+  cursor.execute('DELETE FROM plants WHERE id = ?', (plantid,))
+  conn.commit()
+  conn.close()
+
+  return jsonify({
+    'success': True,
+    'plantid': plantid,
+    'message': 'Plant deletet succsesfull',
+    'code': 1
+  }), 201
+
+
+
+
 
 def save_water_level_statistic(water_level_n_save):
   try:
