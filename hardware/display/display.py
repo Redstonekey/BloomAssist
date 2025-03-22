@@ -1,13 +1,12 @@
 from .fake_lcd import FakePCF8574_GPIO, FakeAdafruit_CharLCD #fake
 from datetime import datetime
 import time
-try:
-    from .PCF8574 import PCF8574_I2C, PCF8574_GPIO
-    from .Adafruit_LCD1602 import Adafruit_CharLCD  #real
-except Exception as e:
-    print(e)
+from .PCF8574 import PCF8574_I2C, PCF8574_GPIO
+from .Adafruit_LCD1602 import Adafruit_CharLCD  #real
 mcp_fake = FakePCF8574_GPIO(0x27)  # Create fake GPIO adapter
 lcd_fake = FakeAdafruit_CharLCD(pin_rs=0, pin_e=2, pins_db=[4, 5, 6, 7], GPIO=mcp_fake) #fake
+
+
 try:
     mcp = PCF8574_GPIO(0x27)  # type: ignore # Create GPIO adapter #real
     lcd = Adafruit_CharLCD(pin_rs=0, pin_e=2, pins_db=[4,5,6,7], GPIO=mcp) # type: ignore #real
