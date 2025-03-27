@@ -1,8 +1,6 @@
 import os
 import requests
 from flask import Flask, json, jsonify, render_template, request, url_for, flash, session, redirect
-from google import genai
-from google.genai import types
 import PIL.Image
 import uuid
 import sqlite3
@@ -15,6 +13,7 @@ from hardware.display.display import *
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
+from ai import gemini
 
 intilize_db()
 
@@ -50,13 +49,13 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
-def gemini(message, context):
-  client = genai.Client(api_key=GEMINI_API_KEY)
-  response = client.models.generate_content(
-      model="gemini-2.0-flash",
-      contents= instructions + context + '\n' + message,
-  )
-  return response.text
+# def gemini.text(message, context):
+#   client = genai.Client(api_key=GEMINI_API_KEY)
+#   response = client.models.generate_content(
+#       model="gemini-2.0-flash",
+#       contents= instructions + context + '\n' + message,
+#   )
+#   return response.text
 
 
 def save_water_level(water_level):
@@ -70,6 +69,31 @@ def save_water_level(water_level):
     print(e)
   return
 
+# def ai_loop():
+#   conn = sqlite3.connect('Bloom.db')
+#   cursor = conn.cursor()
+#   cursor.execute('SELECT id FROM plants')
+#   plants = cursor.fetchall()
+#   conn.close()
+#   for plant in plants:
+#     plantid = plant[0]
+#     loop_instructions =  'use &nl to do a new line\n'+ ' every 30 min will you be asked. '+ 'THIS ARE INSTRUCTIONS FROM THE BLOOM ASSIST SYSTHEM DO NOT REFER TO THIS!\n you can do following things: add a alert: do at the beginning of the text &alert and at the end &alert-end for the message write a short sentence between the &alert and &alert-end\n memory things: &memory and at the end &memory-end for the message write a short sentence between the &memory and &memory-end\n new calender event: &calender and at the end &calender-end for the name write a short sentence between the &calender and &calender-end and for the date do inside of the calender tags &date &date-end and for the description inside the tags &description &description-end.\n dont Write outside of these options!'
+#     conn = sqlite3.connect('Bloom.db')
+#     cursor = conn.cursor()
+#     cursor.execute('SELECT * FROM plants WHERE id = ?', (plantid,))
+#     plant = cursor.fetchone()
+#     conn.close()
+#     if plant:
+#       print(gemini.text(str(plant), loop_instructions))
+# ai_loop()
+
+
+def gemini_image(img_path, message, context):
+    image = PIL.Image.open(img_path)
+    if img_path == 'none':
+        return gemini.text(message, context)
+    return(gemini.picture(message, img_path, context))
+
 def ai_loop():
   conn = sqlite3.connect('Bloom.db')
   cursor = conn.cursor()
@@ -78,41 +102,24 @@ def ai_loop():
   conn.close()
 
   for plant in plants:
-    gemini_loop(plant[0])
+    plant_loop(plant[0])
+  print('-'*11)
+  print('AI LOOP DONE')
+  print('-'*11)
+  return 'AI LOOP DONE'
 
-
-def gemini_loop(plantid):
-  loop_instructions =  'use &nl to do a new line\n'+ ' every 30 min will you be asked. '+ 'THIS ARE INSTRUCTIONS FROM THE BLOOM ASSIST SYSTHEM DO NOT REFER TO THIS!\n you can do following things: add a alert: do at the beginning of the text &alert and at the end &alert-end for the message write a short sentence between the &alert and &alert-end\n memory things: &memory and at the end &memory-end for the message write a short sentence between the &memory and &memory-end\n new calender event: &calender and at the end &calender-end for the name write a short sentence between the &calender and &calender-end and for the date do inside of the calender tags &date &date-end and for the description inside the tags &description &description-end.\n dont Write outside of these options!'
+def plant_loop(plantid):
   conn = sqlite3.connect('Bloom.db')
   cursor = conn.cursor()
   cursor.execute('SELECT * FROM plants WHERE id = ?', (plantid,))
   plant = cursor.fetchone()
   conn.close()
-  if plant:
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    response = client.models.generate_content(
-      model="gemini-2.0-flash",
-      contents= loop_instructions + '\n plant details:' + str(plant) + 'bodenfeuchtigkeit: 50%'
-    )
-    print(response.text)
-  else:
-    return 1
 
-gemini_loop(1)
-
-
-def gemini_image(img_path, message, context):
-    image = PIL.Image.open(img_path)
-    if img_path == 'none':
-        return gemini(message, context)
-    client = genai.Client(api_key="AIzaSyDUGz1MODta7hkPBwLFLYembTb0xTtSv74")
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=[instructions + context + '\n' + message, image])
-    print(response.text)
-    return(response.text)
-
-
+  if not plant:
+    return 'Plant not found'
+  plant_info = str(plant) if isinstance(plant, tuple) else plant
+  gemini.text(plant_info, 'Werte alle Informationen aus! Wenn du dringende Informationen hast antworte nur mit folgender sytax für eine Benachrichtigung beim User: &alert(alert nachricht)')
+  return
 
 
 
@@ -156,7 +163,7 @@ def ai():
         # session['conversation'] = []
         message = request.form['user_input']
         session['conversation'].append({'role': 'user', 'content': message})
-        response = gemini(message, context)
+        response = gemini.text(message, context)
         session['conversation'].append({'role': 'ai', 'content': response})
         flash((response or 'Mhhh looks like that didnt work well...'))
         return render_template('ai-chat.html', conversation=session['conversation'])
@@ -219,67 +226,87 @@ def add_user_to_db(password, email):
 
   conn.commit()
   conn.close()
-def add_plant_to_db(userid, name, plant_type, plant_location, plant_date, notes):
-  context = f"Plant Info - ID: {userid}, Name: {name}, Type: {plant_type}, Location: {plant_location}, Date: {plant_date}, Notes: {notes}. Answer always in German!"
-  tip_bewässerung = gemini('give a tip about the following plant for the following categorie only 1 sentenc Bewässerung dont use &nl', context)
-  tip_Lichtbedarf = gemini('give a tip about the following plant for the following categorie only 1 sentenc Lichtbedarf dont use &nl', context)
-  tip_dünger = gemini('give a tip about the following plant for the following categorie only 1 sentenc Dünger dont use &nl', context)
-  print(tip_bewässerung, tip_Lichtbedarf, tip_dünger)
-  try:
-    conn = sqlite3.connect('Bloom.db')
-    cursor = conn.cursor()
-
-    cursor.execute('''
-    INSERT INTO plants (userid, name, plant_type, plant_location, plant_date, notes, ai_bewässerung, ai_licht, ai_dünger)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (userid, name, plant_type, plant_location, plant_date, notes, tip_bewässerung, tip_Lichtbedarf, tip_dünger))
-    conn.commit()
-    conn.close()
-    return 2
-  except Exception as e:
-    return 1
-
-
 @app.route('/add-plant-to-db', methods=["POST"])
-def addplanttodb():
-  if not session.get('logged_in'):
-    return redirect(url_for('login'))
-  if session.get('logged_in') is False:
-    return redirect(url_for('login'))
-  
-  # common-name:
-  name = request.form.get('plant_name')
-  # plant-type:
-  plant_type = request.form.get('plant_type')
-  # plant-location:
-  plant_location = request.form.get('plant_location')
-  # plant-date:
-  plant_date = request.form.get('plant_date')
-  # notes:
-  notes = request.form.get('notes')
-  email = session.get('email')
-  conn = sqlite3.connect('Bloom.db')
-  cursor = conn.cursor()
-  cursor.execute('SELECT id FROM user WHERE email = ?', (email,))
-  user = cursor.fetchone()
-  conn.close()
-  if user:
-    userid = user[0]
-  else:
-    flash('User not found.')
-    return redirect(url_for('login'))
-  if add_plant_to_db(userid, name, plant_type, plant_location, plant_date, notes) == 2:
-    return redirect(url_for('index'))
+def add_plant_to_db():
+    """Handle adding a new plant with AI-generated care tips"""
+    
+    # Check authentication
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
 
-  print(name, plant_type, plant_location, plant_date, notes)
+    # Get form data with default values
+    plant_data = {
+        'name': request.form.get('plant_name', '').strip(),
+        'plant_type': request.form.get('plant_type', '').strip(),
+        'plant_location': request.form.get('plant_location', '').strip(),
+        'plant_date': request.form.get('plant_date', '').strip(),
+        'notes': request.form.get('notes', '').strip()
+    }
 
+    # Debug print
+    print("Received plant data:", plant_data)
 
+    # Validate required fields
+    if not all([plant_data['name'], plant_data['plant_type'], 
+                plant_data['plant_location'], plant_data['plant_date']]):
+        print("Missing required fields")  # Debug print
+        flash('Please fill in all required fields')
+        return redirect(url_for('add_plant'))
 
-  return ""
+    try:
+        # Get user ID
+        conn = sqlite3.connect('Bloom.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM user WHERE email = ?', (session.get('email'),))
+        user = cursor.fetchone()
+        conn.close()
 
+        if not user:
+            flash('User not found')
+            return redirect(url_for('login'))
 
+        userid = user[0]
 
+        # Generate AI care tips
+        context = f"Plant Info - ID: {userid}, Name: {plant_data['name']}, Type: {plant_data['plant_type']}, " \
+                 f"Location: {plant_data['plant_location']}, Date: {plant_data['plant_date']}, " \
+                 f"Notes: {plant_data['notes']}. Answer always in German!"
 
+        tips = {
+            'bewässerung': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Bewässerung dont use &nl', context),
+            'licht': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Lichtbedarf dont use &nl', context),
+            'dünger': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Dünger dont use &nl', context)
+        }
+
+        # Save to database
+        conn = sqlite3.connect('Bloom.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO plants (
+                userid, name, plant_type, plant_location, plant_date, notes,
+                ai_bewässerung, ai_licht, ai_dünger
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            userid, 
+            plant_data['name'],
+            plant_data['plant_type'],
+            plant_data['plant_location'],
+            plant_data['plant_date'],
+            plant_data['notes'],
+            tips['bewässerung'],
+            tips['licht'],
+            tips['dünger']
+        ))
+        conn.commit()
+        conn.close()
+        
+        flash('Plant added successfully!')
+        return redirect(url_for('index'))
+
+    except Exception as e:
+        print(f"Error: {str(e)}")  # Debug print
+        flash(f'Error occurred: {str(e)}')
+        return redirect(url_for('add_plant'))
 
 
 
@@ -653,10 +680,19 @@ def api_signup():
 
 
 
-@app.route('/api/delete/<plantid>')
+@app.route('/api/delete/<plantid>', methods=['DELETE'])
 @token_required
 def api_delete(plantid):  
-    
+  # Get email from token
+  token = request.headers['Authorization'].replace('Bearer ', '')
+  try:
+    token_data = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    email = token_data['email']
+    print(email)
+    print('-'*50) 
+  except:
+    return jsonify({'success': False, 'message': 'Invalid token', 'code': 4}), 401
+  
   conn = sqlite3.connect('Bloom.db')
   cursor = conn.cursor()
   
@@ -669,16 +705,15 @@ def api_delete(plantid):
   
   if not plant:
     conn.close()
-    flash('Plant not found')
     return jsonify({
     'success': False,
     'plantid': plantid,
-    'message': 'Plant doesnt excist',
+    'message': 'Plant doesnt exist',
     'code': 3 
     })
     
-  # Get user ID for logged in user
-  cursor.execute('SELECT id FROM user WHERE email = ?', (session['email'],))
+  # Get user ID for token user
+  cursor.execute('SELECT id FROM user WHERE email = ?', (email,))
   user = cursor.fetchone()
   
   if not user or plant[0] != user[0]:
@@ -698,11 +733,151 @@ def api_delete(plantid):
   return jsonify({
     'success': True,
     'plantid': plantid,
-    'message': 'Plant deletet succsesfull',
+    'message': 'Plant deleted successfully',
     'code': 1
   }), 201
 
+@app.route('/api/getplants', methods=['GET'])
+@token_required
+def api_get_plants():
+  # Get email from token
+  token = request.headers['Authorization'].replace('Bearer ', '')
+  try:
+    token_data = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    email = token_data['email']
+  except:
+    return jsonify({'success': False, 'message': 'Invalid token', 'code': 4}), 401
 
+  conn = sqlite3.connect('Bloom.db')
+  cursor = conn.cursor()
+
+  # Get user ID
+  cursor.execute('SELECT id FROM user WHERE email = ?', (email,))
+  user = cursor.fetchone()
+
+  if not user:
+    conn.close()
+    print('User not found')
+    return jsonify({'success': False, 'message': 'User not found', 'code': 3}), 404
+
+  # Get all plants for this user
+  cursor.execute('''
+    SELECT id, name, plant_type, plant_location, plant_date, feuchtigkeit, 
+          ai_bewässerung, ai_licht, ai_dünger, notes
+    FROM plants 
+    WHERE userid = ?
+  ''', (user[0],))
+
+  plants = []
+  for plant in cursor.fetchall():
+    print(plant)
+    plants.append({
+      'id': plant[0],
+      'name': plant[1],
+      'type': plant[2],
+      'location': plant[3],
+      'date': plant[4],
+      'moisture': plant[5],
+      'watering_tip': plant[6],
+      'light_tip': plant[7],
+      'fertilizer_tip': plant[8],
+      'notes': plant[9]
+    })
+
+  conn.close()
+  print('Plants retrieved successfully')
+  return jsonify({
+    'success': True,
+    'plants': plants,
+    'message': 'Plants retrieved successfully',
+    'code': 1
+  }), 200
+
+@app.route('/api/add-plant', methods=['POST'])
+@token_required
+def api_add_plant():
+  # Get email from token
+  token = request.headers['Authorization'].replace('Bearer ', '')
+  try:
+    token_data = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    email = token_data['email']
+  except:
+    return jsonify({'success': False, 'message': 'Invalid token', 'code': 4}), 401
+
+  # Get JSON data
+  data = request.get_json()
+  if not data:
+    return jsonify({'success': False, 'message': 'No data provided', 'code': 3}), 400
+
+  # Extract plant data
+  plant_data = {
+    'name': data.get('name', '').strip(),
+    'plant_type': data.get('plant_type', '').strip(),
+    'plant_location': data.get('plant_location', '').strip(), 
+    'plant_date': data.get('plant_date', '').strip(),
+    'notes': data.get('notes', '').strip()
+  }
+
+  # Validate required fields
+  if not all([plant_data['name'], plant_data['plant_type'], 
+        plant_data['plant_location'], plant_data['plant_date']]):
+    return jsonify({'success': False, 'message': 'Missing required fields', 'code': 2}), 400
+
+  try:
+    # Get user ID
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM user WHERE email = ?', (email,))
+    user = cursor.fetchone()
+
+    if not user:
+      conn.close()
+      return jsonify({'success': False, 'message': 'User not found', 'code': 3}), 404
+
+    userid = user[0]
+
+    # Generate AI care tips
+    context = f"Plant Info - Name: {plant_data['name']}, Type: {plant_data['plant_type']}, " \
+          f"Location: {plant_data['plant_location']}, Date: {plant_data['plant_date']}, " \
+          f"Notes: {plant_data['notes']}. Answer always in German!"
+
+    tips = {
+      'bewässerung': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Bewässerung dont use &nl', context),
+      'licht': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Lichtbedarf dont use &nl', context),
+      'dünger': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Dünger dont use &nl', context)
+    }
+
+    # Save to database
+    cursor.execute('''
+      INSERT INTO plants (
+        userid, name, plant_type, plant_location, plant_date, notes,
+        ai_bewässerung, ai_licht, ai_dünger
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+      userid,
+      plant_data['name'],
+      plant_data['plant_type'],
+      plant_data['plant_location'],
+      plant_data['plant_date'],
+      plant_data['notes'],
+      tips['bewässerung'],
+      tips['licht'],
+      tips['dünger']
+    ))
+    
+    plant_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+      'success': True,
+      'plant_id': plant_id,
+      'message': 'Plant added successfully',
+      'code': 1
+    }), 201
+
+  except Exception as e:
+    return jsonify({'success': False, 'message': str(e), 'code': 5}), 500
 
 
 
@@ -743,7 +918,7 @@ def run_scheduler():
       time.sleep(1)
 
 def start_scheduler():
-    schedule.every(2).minutes.do(lambda: ai_loop())
+    schedule.every(15).seconds.do(lambda: ai_loop())
     schedule.every(15).seconds.do(lambda: check_hardware())
     
     # Create and start scheduler thread
@@ -752,7 +927,7 @@ def start_scheduler():
     scheduler_thread.start()
 
 if __name__ == '__main__':
-  debug = True
+  debug = False
   start_scheduler()
   check_hardware()
   app.run(host='0.0.0.0', port=8080, debug=False)
