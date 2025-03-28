@@ -842,9 +842,9 @@ def api_add_plant():
           f"Notes: {plant_data['notes']}. Answer always in German!"
 
     tips = {
-      'bewässerung': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Bewässerung dont use &nl', context),
-      'licht': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Lichtbedarf dont use &nl', context),
-      'dünger': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Dünger dont use &nl', context)
+      'bewässerung': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Bewässerung', context),
+      'licht': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Lichtbedarf', context),
+      'dünger': gemini.text('give a tip about the following plant for the following categorie only 1 sentenc Dünger', context)
     }
 
     # Save to database
@@ -927,7 +927,7 @@ def start_scheduler():
     scheduler_thread.start()
 
 if __name__ == '__main__':
-  debug = False
+  debug = True
   start_scheduler()
   check_hardware()
   app.run(host='0.0.0.0', port=8080, debug=False)
