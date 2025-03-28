@@ -105,6 +105,6 @@ class gemini:
 #----------------
 # example usage
 #----------------
-gemini.text('erzähle mir eine 30 sekunden geschichte', 'context')
+# gemini.text('erzähle mir eine 30 sekunden geschichte', 'context')
 # gemini.generate('erzähle mir eine 30 sekunden geschichte', 'sei eine katzte')
 # gemini.picture('message', 'image.jpg', 'context')
