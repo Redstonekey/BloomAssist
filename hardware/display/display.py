@@ -29,8 +29,8 @@ def get_time_now():
     return datetime.now().strftime('    %H:%M:%S')
 
 def set_lcd(water_level, water_level_n):
+    init_hardware()
     global USE_TEST_MODE
-    
     print(f'{water_level}   {water_level_n}')
     
     if not USE_TEST_MODE and mcp and lcd:

@@ -899,8 +899,8 @@ def save_water_level_statistic(water_level_n_save):
     # Render the form template
 def check_hardware():
   if debug == True:
-    water_level_status, water_level_n = get_test_level()
-    set_test_lcd(water_level_status, water_level_n)
+    water_level_status, water_level_n = get_water_level()
+    set_lcd(water_level_status, water_level_n)
     water_level_n_save = water_level_n * 10
     save_water_level(water_level_n_save)
     save_water_level_statistic(water_level_n_save)
