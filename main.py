@@ -910,4 +910,16 @@ def run_scheduler():
       schedule.run_pending()
       time.sleep(1)
 
- 
+def start_scheduler():
+    schedule.every(2).minutes.do(lambda: ai_loop())
+    schedule.every(15).seconds.do(lambda: check_hardware())
+    
+    # Create and start scheduler thread
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
+
+if __name__ == '__main__':
+  debug = True
+  start_scheduler()
+  app.run(host='0.0.0.0', port=8080, debug=False)
