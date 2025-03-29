@@ -990,6 +990,8 @@ def save_water_level_statistic(water_level_n_save):
     # Render the form template
 def check_hardware():
   water_level_status, water_level_n = get_water_level() # type: ignore
+  water_level_n = 6
+  water_level_status = 'Feucht'
   set_lcd(water_level_status, water_level_n) # type: ignore
   water_level_n_save = water_level_n * 10
   save_water_level(water_level_n_save)
