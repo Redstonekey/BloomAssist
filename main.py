@@ -879,7 +879,98 @@ def api_add_plant():
   except Exception as e:
     return jsonify({'success': False, 'message': str(e), 'code': 5}), 500
 
+@app.route('/api/wearos/login', methods=['POST'])
+def api_wearos_login():
+  data = request.get_json()
+  verification_code = str(uuid.uuid4())[:6]  # Generate 6-digit code
+  
+  try:
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    
+    # Store verification code temporarily
+    cursor.execute('''
+      CREATE TABLE IF NOT EXISTS wearos_verification (
+        email TEXT PRIMARY KEY,
+        code TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    ''')
+    
+    cursor.execute('''
+      INSERT OR REPLACE INTO wearos_verification (email, code)
+      VALUES (?, ?)
+    ''', (data.get('email'), verification_code))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+      'success': True,
+      'verification_code': verification_code,
+      'message': 'Enter this code in your mobile app',
+      'code': 1
+    }), 200
+    
+  except Exception as e:
+    return jsonify({
+      'success': False, 
+      'message': str(e),
+      'code': 2
+    }), 500
 
+@app.route('/api/wearos/verify', methods=['POST']) 
+def api_wearos_verify():
+  data = request.get_json()
+  email = data.get('email')
+  code = data.get('code')
+  
+  try:
+    conn = sqlite3.connect('Bloom.db')
+    cursor = conn.cursor()
+    
+    # Check verification code
+    cursor.execute('''
+      SELECT code FROM wearos_verification 
+      WHERE email = ? AND 
+          datetime(timestamp) > datetime('now', '-5 minutes')
+    ''', (email,))
+    
+    stored_code = cursor.fetchone()
+    
+    if not stored_code or stored_code[0] != code:
+      conn.close()
+      return jsonify({
+        'success': False,
+        'message': 'Invalid or expired code',
+        'code': 2
+      }), 401
+      
+    # Delete used verification code
+    cursor.execute('DELETE FROM wearos_verification WHERE email = ?', (email,))
+    conn.commit()
+    conn.close()
+    
+    # Generate auth token
+    token = jwt.encode({
+      'email': email,
+      'exp': datetime.utcnow() + JWT_EXPIRATION_DELTA
+    }, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    
+    return jsonify({
+      'success': True,
+      'token': token,
+      'message': 'WearOS device verified successfully',
+      'code': 1
+    }), 200
+    
+  except Exception as e:
+    return jsonify({
+      'success': False,
+      'message': str(e),
+      'code': 3
+    }), 500
+  
 
 def save_water_level_statistic(water_level_n_save):
   try:
@@ -910,10 +1001,13 @@ def run_scheduler():
       schedule.run_pending()
       time.sleep(1)
 
-def start_scheduler():
+def start_hardware_schedule():
+  schedule.every(15).seconds.do(lambda: check_hardware())
+  scheduler_thread = threading.Thread(target=run_scheduler)
+  scheduler_thread.daemon = True
+  scheduler_thread.start()
+def start_ai_schedule():
     schedule.every(2).minutes.do(lambda: ai_loop())
-    schedule.every(15).seconds.do(lambda: check_hardware())
-    
     # Create and start scheduler thread
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
@@ -921,5 +1015,8 @@ def start_scheduler():
 
 if __name__ == '__main__':
   debug = True
-  start_scheduler()
-  app.run(host='0.0.0.0', port=8080, debug=False)
+  offline = False
+  if offline == False:
+    start_ai_schedule()
+  start_hardware_schedule()
+  app.run(host='0.0.0.0', port=8080, debug=False) 

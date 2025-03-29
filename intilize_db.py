@@ -52,6 +52,13 @@ def intilize_db():
     feuchtigkeit TEXT
   )
   ''')
+  cursor.execute('''
+  CREATE TABLE IF NOT EXISTS wearos_verification (
+    email TEXT PRIMARY KEY,
+    code TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+''')
 
   conn.commit()
   conn.close()
