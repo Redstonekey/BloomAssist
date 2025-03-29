@@ -889,7 +889,7 @@ def api_wearos_login():
     cursor = conn.cursor()
     
     # Store verification code temporarily
-    cursor.execute('''
+    cursor.execute(''' 
       CREATE TABLE IF NOT EXISTS wearos_verification (
         email TEXT PRIMARY KEY,
         code TEXT,
@@ -977,8 +977,8 @@ def save_water_level_statistic(water_level_n_save):
     conn = sqlite3.connect('Bloom.db')
     cursor = conn.cursor()
     cursor.execute('''
-    INSERT INTO statistic (userid, plantid, date, feuchtigkeit)
-    VALUES (1, 1, datetime('now'), ?)
+    INSERT INTO statistic (userid,)
+    VALUES (1, 1, datetime('now'),  plantid, date, feuchtigkeit?)
     ''', (water_level_n_save,))
     conn.commit()
     conn.close()
@@ -990,9 +990,11 @@ def save_water_level_statistic(water_level_n_save):
     # Render the form template
 def check_hardware():
   water_level_status, water_level_n = get_water_level() # type: ignore
+  print(water_level_status, water_level_n, '  Funktioniert 1.')
   water_level_n = 6
   water_level_status = 'Feucht'
   set_lcd(water_level_status, water_level_n) # type: ignore
+  print(water_level_status, water_level_n, '  Funktioniert 2.')
   water_level_n_save = water_level_n * 10
   save_water_level(water_level_n_save)
   save_water_level_statistic(water_level_n_save)
@@ -1010,6 +1012,6 @@ def start_schedule():
   scheduler_thread.daemon = True
   scheduler_thread.start()
 if __name__ == '__main__':
-  debug = True
-  start_schedule()
+  debug = False
   app.run(host='0.0.0.0', port=8080, debug=False) 
+  start_schedule()
