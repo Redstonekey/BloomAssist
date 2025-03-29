@@ -1013,5 +1013,5 @@ def start_schedule():
   scheduler_thread.start()
 if __name__ == '__main__':
   debug = False
-  app.run(host='0.0.0.0', port=8080, debug=False) 
   start_schedule()
+  app.run(host='0.0.0.0', port=8080, debug=False) 
