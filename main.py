@@ -1001,22 +1001,13 @@ def run_scheduler():
       schedule.run_pending()
       time.sleep(1)
 
-def start_hardware_schedule():
+def start_schedule():
   schedule.every(15).seconds.do(lambda: check_hardware())
+  schedule.every(2).minutes.do(lambda: ai_loop())
   scheduler_thread = threading.Thread(target=run_scheduler)
   scheduler_thread.daemon = True
   scheduler_thread.start()
-def start_ai_schedule():
-    schedule.every(2).minutes.do(lambda: ai_loop())
-    # Create and start scheduler thread
-    scheduler_thread = threading.Thread(target=run_scheduler)
-    scheduler_thread.daemon = True
-    scheduler_thread.start()
-
 if __name__ == '__main__':
   debug = True
-  offline = False
-  if offline == False:
-    start_ai_schedule()
-  start_hardware_schedule()
+  start_schedule()
   app.run(host='0.0.0.0', port=8080, debug=False) 
